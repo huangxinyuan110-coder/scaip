@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCAIP · 供应链智能平台</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f0f2f7;--white:#fff;--black:#0e1117;
+  --blue:#2563eb;--blue-d:#1d4ed8;--blue-l:#eff6ff;--blue-m:#bfdbfe;
+  --green:#059669;--green-l:#ecfdf5;--green-m:#a7f3d0;
+  --red:#dc2626;--red-l:#fef2f2;--red-m:#fecaca;
+  --amber:#d97706;--amber-l:#fffbeb;
+  --g50:#f8fafc;--g100:#f1f5f9;--g200:#e2e8f0;--g300:#cbd5e1;
+  --g400:#94a3b8;--g500:#64748b;--g600:#475569;--g700:#334155;--g800:#1e293b;
+  --sans:'Outfit',sans-serif;--mono:'JetBrains Mono',monospace;
+  --r:12px;--rl:18px;--sh:0 1px 3px rgba(0,0,0,.06),0 4px 20px rgba(0,0,0,.08);--ss:0 1px 2px rgba(0,0,0,.05),0 2px 8px rgba(0,0,0,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--g800);font-family:var(--sans);font-size:14px;line-height:1.6}
+.app{display:grid;grid-template-columns:240px 1fr;grid-template-rows:56px 1fr;height:100vh}
+/* topbar */
+.topbar{grid-column:1/-1;background:var(--white);border-bottom:1px solid var(--g200);display:flex;align-items:center;padding:0 24px;gap:16px;z-index:50;box-shadow:var(--ss)}
+.brand{display:flex;align-items:center;gap:10px;min-width:200px}
+.brand-chip{background:var(--blue);color:#fff;font-size:11px;font-weight:700;font-family:var(--mono);padding:5px 9px;border-radius:8px;letter-spacing:.04em}
+.brand-name{font-size:15px;font-weight:700;color:var(--black);letter-spacing:-.3px}
+.brand-ver{font-size:10px;font-family:var(--mono);color:var(--g400);background:var(--g100);padding:2px 7px;border-radius:10px}
+.sys-status{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--g500);background:var(--green-l);border:1px solid var(--green-m);padding:4px 12px;border-radius:20px;margin:0 auto}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.clock{font-family:var(--mono);font-size:12px;color:var(--g400);background:var(--g100);padding:5px 10px;border-radius:8px;margin-left:auto}
+/* sidebar */
+.sidebar{background:var(--white);border-right:1px solid var(--g200);padding:20px 12px;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+.ngl{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--g400);padding:4px 10px 6px;margin-top:8px}
+.ni{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;color:var(--g500);font-size:13px;font-weight:500;transition:all .15s}
+.ni:hover{background:var(--g100);color:var(--g700)}
+.ni.active{background:var(--blue-l);color:var(--blue);font-weight:600}
+.ni svg{width:16px;height:16px;flex-shrink:0}
+.nbadge{margin-left:auto;font-size:10px;font-family:var(--mono);font-weight:700;padding:2px 7px;border-radius:20px;background:var(--red-l);color:var(--red)}
+.sf{margin-top:auto;padding:14px 10px;border-top:1px solid var(--g200);font-size:11px;color:var(--g400);line-height:1.8}
+/* content */
+.content{overflow-y:auto;padding:24px;background:var(--bg)}
+.page{display:none;animation:fu .2s ease}.page.active{display:block}
+@keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+/* page header */
+.ph{margin-bottom:24px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.ph-title{font-size:22px;font-weight:800;color:var(--black);letter-spacing:-.4px;line-height:1.2}
+.ph-sub{font-size:13px;color:var(--g500);margin-top:4px}
+.ph-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
+/* kpi */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:var(--white);border-radius:var(--rl);padding:20px 22px;border:1px solid var(--g200);box-shadow:var(--ss);position:relative;overflow:hidden;transition:transform .15s,box-shadow .15s}
+.kpi:hover{transform:translateY(-2px);box-shadow:var(--sh)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:3px 3px 0 0}
+.kpi-blue::before{background:var(--blue)}.kpi-green::before{background:var(--green)}.kpi-red::before{background:var(--red)}.kpi-amber::before{background:var(--amber)}
+.kpi-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--g400);margin-bottom:10px}
+.kpi-val{font-size:28px;font-weight:800;font-family:var(--mono);color:var(--black);line-height:1}
+.kpi-blue .kpi-val{color:var(--blue)}.kpi-green .kpi-val{color:var(--green)}.kpi-red .kpi-val{color:var(--red)}.kpi-amber .kpi-val{color:var(--amber)}
+.kpi-d{font-size:11px;color:var(--g400);margin-top:6px;font-family:var(--mono)}
+.kpi-d.up{color:var(--green)}.kpi-d.down{color:var(--red)}
+/* card */
+.card{background:var(--white);border-radius:var(--rl);border:1px solid var(--g200);box-shadow:var(--ss);padding:20px 22px}
+.ct{font-size:13px;font-weight:700;color:var(--g700);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.ctb{font-size:10px;font-family:var(--mono);color:var(--g400);background:var(--g100);padding:2px 8px;border-radius:8px;margin-left:auto}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:10px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn-primary{background:var(--black);color:#fff}.btn-primary:hover:not(:disabled){background:var(--g800);transform:translateY(-1px)}
+.btn-blue{background:var(--blue);color:#fff}.btn-blue:hover:not(:disabled){background:var(--blue-d);transform:translateY(-1px)}
+.btn-green{background:var(--green);color:#fff}.btn-green:hover{background:#047857;transform:translateY(-1px)}
+.btn-ghost{background:var(--white);color:var(--g600);border:1.5px solid var(--g200)}.btn-ghost:hover{border-color:var(--g400);color:var(--g800)}
+.btn-sm{padding:6px 14px;font-size:12px;border-radius:8px}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important}
+.btn-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+/* badge */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;font-family:var(--mono)}
+.badge-ok{background:var(--green-l);color:var(--green)}.badge-warn{background:var(--amber-l);color:var(--amber)}
+.badge-err{background:var(--red-l);color:var(--red)}.badge-info{background:var(--blue-l);color:var(--blue)}
+.badge-gray{background:var(--g100);color:var(--g500)}
+/* table */
+.twrap{background:var(--white);border:1px solid var(--g200);border-radius:var(--rl);overflow:hidden;box-shadow:var(--ss)}
+.tscroll{overflow-x:auto;max-height:420px;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--g50);padding:10px 14px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--g400);font-weight:700;position:sticky;top:0;z-index:1;border-bottom:1px solid var(--g200);white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--g100);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--g50)}
+td{padding:10px 14px;vertical-align:middle}
+.td-m{font-family:var(--mono);font-size:11px}.td-r{text-align:right}.td-dim{color:var(--g400);font-size:11px;font-family:var(--mono)}.td-name{max-width:220px;line-height:1.4;font-weight:500}
+/* prog */
+.pw{background:var(--g200);border-radius:4px;height:4px;overflow:hidden;margin:16px 0;display:none}
+.pw.show{display:block}
+.pf{height:100%;border-radius:4px;transition:width .35s ease;width:0;background:var(--blue)}
+/* tabs */
+.tabs{display:flex;gap:4px;border-bottom:1.5px solid var(--g200);margin-bottom:20px}
+.tab{padding:9px 18px;font-size:13px;cursor:pointer;border-radius:10px 10px 0 0;color:var(--g400);border:1.5px solid transparent;border-bottom:none;margin-bottom:-1.5px;transition:all .15s;display:flex;align-items:center;gap:7px;font-weight:600}
+.tab:hover{color:var(--g700)}
+.tab.active{background:var(--white);color:var(--black);border-color:var(--g200);border-bottom-color:var(--white)}
+.tbadge{font-family:var(--mono);font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px}
+.tp{display:none}.tp.active{display:block}
+/* chart */
+.cw{position:relative;width:100%}
+/* scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--g300);border-radius:3px}
+/* metric */
+.mr{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--g100)}
+.mr:last-child{border-bottom:none}
+.mn{font-size:12px;color:var(--g600)}.mv{font-size:13px;font-family:var(--mono);font-weight:600;color:var(--g800)}
+.br{height:4px;background:var(--g200);border-radius:2px;overflow:hidden;margin:3px 0 6px}
+.bf{height:100%;border-radius:2px;transition:width .6s ease}
+/* alert */
+.ai{padding:12px 14px;border-radius:10px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px}
+.ai.high{background:var(--red-l);border:1px solid var(--red-m)}.ai.med{background:var(--amber-l);border:1px solid #fde68a}.ai.low{background:var(--blue-l);border:1px solid var(--blue-m)}
+.adot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.ai.high .adot{background:var(--red)}.ai.med .adot{background:var(--amber)}.ai.low .adot{background:var(--blue)}
+.at{font-size:12px;font-weight:700;color:var(--g800);margin-bottom:2px}.ad{font-size:11px;color:var(--g500);font-family:var(--mono)}
+/* empty */
+.empty{text-align:center;padding:48px 20px;color:var(--g400)}
+.ei{font-size:36px;margin-bottom:10px;opacity:.4}.et{font-size:13px;font-weight:600}
+/* notice */
+.notice{display:flex;align-items:flex-start;gap:10px;background:var(--blue-l);border:1.5px solid var(--blue-m);border-radius:var(--r);padding:12px 16px;margin-bottom:18px;font-size:12px;color:var(--g700);line-height:1.6}
+/* tbar / search */
+.tbar{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.search{background:var(--white);border:1.5px solid var(--g200);border-radius:10px;padding:8px 14px;font-family:var(--sans);font-size:13px;color:var(--g800);width:220px;transition:border-color .15s}
+.search:focus{outline:none;border-color:var(--blue)}.search::placeholder{color:var(--g400)}
+.rc{font-family:var(--mono);font-size:11px;color:var(--g400);margin-left:auto}
+/* log */
+.logbox{background:var(--g800);border-radius:var(--r);padding:12px 16px;font-family:var(--mono);font-size:11px;color:#94a3b8;max-height:90px;overflow-y:auto;display:none;line-height:2;margin-top:14px}
+.logbox.show{display:block}
+.lok{color:#6ee7b7}.lwarn{color:#fcd34d}.lerr{color:#f87171}
+
+/* ── procurement specific ── */
+.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.dz{border:2px dashed var(--g300);border-radius:var(--rl);padding:28px 20px;text-align:center;cursor:pointer;position:relative;background:var(--white);transition:all .2s}
+.dz input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.dz:hover{border-color:var(--blue);background:var(--blue-l)}
+.dz.over{border-color:var(--blue);background:var(--blue-l);transform:scale(1.01)}
+.dz.done{border-color:var(--green);border-style:solid;background:var(--green-l)}
+.dz-ico{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:22px;transition:all .2s}
+.dz-proj .dz-ico{background:var(--blue-l);color:var(--blue)}.dz-ann .dz-ico{background:var(--amber-l);color:var(--amber)}
+.dz.done .dz-ico{background:var(--green-l);color:var(--green)}
+.dz-tag{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--g400);margin-bottom:4px}
+.dz-lbl{font-size:14px;font-weight:700;color:var(--g800);margin-bottom:3px}
+.dz-hint{font-size:12px;color:var(--g400)}.dz-fn{font-family:var(--mono);font-size:11px;color:var(--green);margin-top:8px;word-break:break-all;font-weight:500}
+.dz-ck{position:absolute;top:12px;right:14px;color:var(--green);font-size:16px;font-weight:700;opacity:0;transition:.2s}.dz.done .dz-ck{opacity:1}
+/* proc flow */
+.pflow{display:flex;align-items:center;gap:0;margin-bottom:24px;padding:16px 20px;background:var(--white);border-radius:var(--rl);border:1px solid var(--g200)}
+.pfs{display:flex;align-items:center;gap:8px;flex:1;padding:0 8px}
+.pfn{width:28px;height:28px;border-radius:50%;border:2px solid var(--g300);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:var(--mono);color:var(--g400);flex-shrink:0;transition:.25s}
+.pfs.active .pfn{border-color:var(--blue);background:var(--blue);color:#fff}
+.pfs.done .pfn{border-color:var(--green);background:var(--green);color:#fff}
+.pfl{font-size:12px;font-weight:600;color:var(--g400);transition:.25s}
+.pfs.active .pfl{color:var(--blue)}.pfs.done .pfl{color:var(--green)}
+.pfarr{color:var(--g300);font-size:16px;flex-shrink:0}
+/* unit confirm */
+.cm{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.cpw{height:3px;background:var(--g200);border-radius:2px;margin-bottom:24px;overflow:hidden}
+.cpf{height:100%;background:var(--blue);border-radius:2px;transition:width .3s}
+.uc{background:var(--white);border:1.5px solid var(--g200);border-radius:var(--rl);overflow:hidden;margin-bottom:14px;transition:all .25s;box-shadow:var(--ss)}
+.uc.decided{opacity:.5;transform:scale(.99)}
+.uch{padding:18px 20px;border-bottom:1px solid var(--g100)}
+.ucb{display:inline-flex;align-items:center;gap:5px;background:var(--g100);color:var(--g500);font-size:10px;font-weight:700;font-family:var(--mono);padding:3px 10px;border-radius:20px;margin-bottom:10px}
+.ucn{font-size:15px;font-weight:700;color:var(--black);margin-bottom:14px;line-height:1.4}
+.ucmp{display:grid;grid-template-columns:1fr 36px 1fr;gap:10px;align-items:center}
+.ub{border-radius:var(--r);padding:12px 16px}
+.ub.proj{background:var(--blue-l);border:1.5px solid var(--blue-m)}.ub.ann{background:var(--g50);border:1.5px solid var(--g200)}
+.ub-lbl{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.ub.proj .ub-lbl{color:var(--blue)}.ub.ann .ub-lbl{color:var(--g400)}
+.ub-val{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--black)}
+.uvs{text-align:center;font-size:11px;font-family:var(--mono);color:var(--g400);font-weight:600}
+.ucf{padding:12px 20px;background:var(--g50);display:flex;gap:10px;align-items:center}
+.ucc{margin-left:auto;font-size:11px;font-family:var(--mono);color:var(--g400)}
+.db{flex:1;padding:10px;border-radius:10px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid var(--g200);background:var(--white);color:var(--g500);transition:all .15s}
+.db.yes:hover{border-color:var(--green);color:var(--green);background:var(--green-l)}.db.no:hover{border-color:var(--red);color:var(--red);background:var(--red-l)}
+.db.sy{border-color:var(--green);background:var(--green);color:#fff}.db.sn{border-color:var(--red);background:var(--red);color:#fff}
+/* running */
+.rc2{text-align:center;padding:40px 0 24px}
+.spin{width:44px;height:44px;border:3px solid var(--g200);border-top-color:var(--blue);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rlog{font-family:var(--mono);font-size:11px;line-height:2;max-height:120px;overflow-y:auto;margin-top:16px;background:var(--g800);border-radius:var(--r);padding:14px 16px;color:#94a3b8}
+/* result tags */
+.rt{display:inline-block;font-size:11px;padding:3px 9px;border-radius:8px;font-weight:600;max-width:220px;line-height:1.4}
+.rt-unit{background:var(--amber-l);color:var(--amber)}.rt-nf{background:var(--g100);color:var(--g500)}.rt-zero{background:var(--blue-l);color:var(--blue)}.rt-sh{background:var(--g100);color:var(--g400)}
+.exc-v{color:var(--red);font-weight:700;font-family:var(--mono);font-size:11px}
+.ok-v{color:var(--green);font-family:var(--mono);font-size:11px}
+/* history */
+.hi{background:var(--white);border:1.5px solid var(--g200);border-radius:var(--rl);padding:16px 20px;margin-bottom:12px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:all .2s;box-shadow:var(--ss)}
+.hi:hover{border-color:var(--blue);transform:translateY(-1px);box-shadow:var(--sh)}.hi.ah{border-color:var(--blue);background:var(--blue-l)}
+.hn{width:36px;height:36px;border-radius:10px;background:var(--g100);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--g500);flex-shrink:0}
+.hinfo{flex:1}.hname{font-size:13px;font-weight:700;color:var(--g800);margin-bottom:3px}.hmeta{font-size:11px;color:var(--g400);font-family:var(--mono)}
+.hstats{display:flex;gap:12px;flex-shrink:0}.hstat{text-align:center}
+.hsv{font-size:16px;font-weight:800;font-family:var(--mono);line-height:1}.hsl{font-size:10px;color:var(--g400);margin-top:2px;font-weight:600}
+.hsplit{display:grid;grid-template-columns:320px 1fr;gap:16px}
+.hlp{max-height:500px;overflow-y:auto}
+/* insight */
+.icard{background:var(--white);border:1.5px solid var(--g200);border-radius:var(--rl);padding:18px 20px;margin-bottom:12px;display:flex;gap:16px;box-shadow:var(--ss)}
+.iidx{font-size:26px;font-weight:800;font-family:var(--mono);min-width:38px;line-height:1}
+.ititle{font-size:13px;font-weight:700;color:var(--black);margin-bottom:4px}
+.isub{font-size:11px;color:var(--g500);line-height:1.6}
+.itag{font-size:10px;font-weight:700;padding:3px 9px;border-radius:8px;display:inline-block;margin-top:8px;font-family:var(--mono)}
+
+.kpi-click{cursor:pointer;}
+.kpi-click:hover{transform:translateY(-3px)!important;box-shadow:var(--sh)!important;}
+.kpi-click:hover .kpi-hint{opacity:1!important;}
+.kpi-hint{font-size:10px;font-weight:600;margin-top:6px;opacity:0;transition:opacity .2s;font-family:var(--mono);}
+.kpi-green .kpi-hint{color:var(--green)}.kpi-red .kpi-hint{color:var(--red)}.kpi-blue .kpi-hint{color:var(--blue)}
+.kpi-click.kpi-active{transform:translateY(-3px);box-shadow:var(--sh);}
+.kpi-click.kpi-active .kpi-hint{opacity:1;}
+.rfbar{display:flex;align-items:center;gap:10px;padding:11px 16px;border-radius:10px;margin-bottom:16px;font-size:13px;font-weight:600;border:1.5px solid;animation:fu .2s ease;}
+.rfbar.ok{background:var(--green-l);border-color:var(--green-m);color:var(--green)}
+.rfbar.exc{background:var(--red-l);border-color:var(--red-m);color:var(--red)}
+.rfbar.man{background:var(--amber-l);border-color:#fde68a;color:var(--amber)}
+.rfbar.unit{background:var(--blue-l);border-color:var(--blue-m);color:var(--blue)}
+.rfbar-close{margin-left:auto;cursor:pointer;font-size:18px;line-height:1;opacity:.5;transition:.15s;font-weight:400;}.rfbar-close:hover{opacity:1}
+</style>
+</head>
+<body>
+<div class="app">
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="brand"><div class="brand-chip">SCAIP</div><span class="brand-name" data-zh="供应链智能平台" data-en="Supply Chain Platform">供应链智能平台</span><span class="brand-ver">v2.0</span></div>
+  <div class="sys-status"><div class="sdot"></div><span data-zh="系统运行正常" data-en="All Systems Normal">系统运行正常</span></div>
+  <div style="display:flex;align-items:center;gap:3px;background:#f1f5f9;border-radius:10px;padding:3px;margin-right:8px">
+  <button id="lb-zh" onclick="switchLang('zh')" style="background:#fff;border:none;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;color:#2563eb;font-family:var(--sans);box-shadow:0 1px 3px rgba(0,0,0,.1)">简中</button>
+  <button id="lb-en" onclick="switchLang('en')" style="background:transparent;border:none;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;color:#94a3b8;font-family:var(--sans)">EN</button>
+</div>
+<div class="clock" id="clock">—</div>
+</div>
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="ngl" data-zh="总览" data-en="OVERVIEW">总览</div>
+  <div class="ni active" onclick="nav('overview',this)">
+    <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity=".7"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".4"/></svg>
+    总览仪表盘
+  </div>
+  <div class="ngl" data-zh="业务模块" data-en="MODULES">业务模块</div>
+  <div class="ni" onclick="nav('procurement',this)">
+    <svg viewBox="0 0 16 16" fill="none"><path d="M2 3h12M2 8h7M2 13h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="13" cy="11" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M13 10v2M12 11h2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+    采购智能<span class="nbadge" id="nb-proc" style="display:none">!</span>
+  </div>
+  <div class="ni" onclick="nav('logistics',this)">
+    <svg viewBox="0 0 16 16" fill="none"><circle cx="3.5" cy="12" r="1.5" stroke="currentColor" stroke-width="1.3"/><circle cx="11.5" cy="12" r="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 9h9l2-4h2l1 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 12h5" stroke="currentColor" stroke-width="1.3"/></svg>
+    物流网络
+  </div>
+  <div class="ni" onclick="nav('inventory',this)">
+    <svg viewBox="0 0 16 16" fill="none"><rect x="1.5" y="6" width="13" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 6V4a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.3"/><path d="M8 9v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    库存规划
+  </div>
+  <div class="ni" onclick="nav('decisions',this)">
+    <svg viewBox="0 0 16 16" fill="none"><path d="M2 14l3-5 3 2 3-6 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    决策优化
+  </div>
+  <div class="sf"><div>最近同步 <span style="color:var(--green);font-weight:600">2分钟前</span></div><div data-zh="供应链管理部 · Q4" data-en="Supply Chain Dept · Q4">供应链管理部 · Q4</div></div>
+</div>
+<!-- CONTENT -->
+<div class="content">
+<!-- ══ 总览 ══ -->
+<div class="page active" id="page-overview">
+  <div class="ph"><div><div class="ph-title" data-zh="总览仪表盘" data-en="Executive Dashboard">总览仪表盘</div><div class="ph-sub" data-zh="供应链管理部 · 实时供应链健康状态" data-en="Supply Chain Dept · Real-time Health">供应链管理部 · 实时供应链健康状态</div></div></div>
+  <div class="kpi-grid">
+    <div class="kpi kpi-blue"><div class="kpi-lbl" data-zh="采购合规率" data-en="Compliance Rate">采购合规率</div><div class="kpi-val" id="ov-pr">—</div><div class="kpi-d" id="ov-pr-s">暂无审核数据</div></div>
+    <div class="kpi kpi-red"><div class="kpi-lbl" data-zh="超标风险金额" data-en="Over-budget Risk">超标风险金额</div><div class="kpi-val" id="ov-ex">—</div><div class="kpi-d down" id="ov-ex-s">暂无数据</div></div>
+    <div class="kpi kpi-amber"><div class="kpi-lbl" data-zh="待人工审核" data-en="Pending Review">待人工审核</div><div class="kpi-val" id="ov-mn">—</div><div class="kpi-d" id="ov-mn-s">暂无数据</div></div>
+    <div class="kpi kpi-green"><div class="kpi-lbl" data-zh="历史审核次数" data-en="Audit History">历史审核次数</div><div class="kpi-val" id="ov-hc">0</div><div class="kpi-d up" data-zh="累计审核记录" data-en="Total records">累计审核记录</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ct"><span data-zh="审核合规率趋势" data-en="Compliance Trend">审核合规率趋势</span> <span class="ctb" data-zh="近10次" data-en="Last 10">近10次</span></div>
+      <div id="c-trend-empty" style="height:180px;display:flex;align-items:center;justify-content:center;color:var(--g400);font-size:13px"><span data-zh="完成首次审核后显示" data-en="Complete first audit to show">完成首次审核后显示</span></div>
+      <div class="cw" style="height:180px;display:none" id="c-trend-wrap"><canvas id="c-trend"></canvas></div>
+    </div>
+    <div class="card"><div class="ct"><span data-zh="历史超标金额" data-en="Over-budget History">历史超标金额</span> <span class="ctb" data-zh="按次" data-en="Per audit">按次</span></div>
+      <div id="c-exc-empty" style="height:180px;display:flex;align-items:center;justify-content:center;color:var(--g400);font-size:13px"><span data-zh="暂无历史数据" data-en="No history yet">暂无历史数据</span></div>
+      <div class="cw" style="height:180px;display:none" id="c-exc-wrap"><canvas id="c-exc-hist"></canvas></div>
+    </div>
+  </div>
+  <div class="card"><div class="ct"><span data-zh="最近审核记录" data-en="Recent Audits">最近审核记录</span> <span class="ctb" id="ov-hc2">0 条</span></div>
+    <div id="ov-hist-list"><div class="empty"><div class="ei">📋</div><div class="et">前往「采购智能」模块完成首次报价审核</div></div></div>
+  </div>
+</div>
+<!-- ══ 采购 ══ -->
+<div class="page" id="page-procurement">
+  <div class="ph">
+    <div><div class="ph-title" data-zh="采购智能模块" data-en="Procurement Intelligence">采购智能模块</div><div class="ph-sub" data-zh="采购管理中心 · 报价审核与年框比对系统" data-en="Procurement Center · Quote Audit System">采购管理中心 · 报价审核与年框比对系统</div></div>
+    <div class="ph-actions">
+      <button class="btn btn-ghost btn-sm" onclick="ptab('history')"><span data-zh="历史记录" data-en="History">历史记录</span></button>
+      <button class="btn btn-blue btn-sm" onclick="ptab('audit')"><span data-zh="+ 新建审核" data-en="+ New Audit">+ 新建审核</span></button>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" data-pt="audit" onclick="ptab('audit')">报价审核</div>
+    <div class="tab" data-pt="history" onclick="ptab('history')">历史记录 <span class="tbadge" style="background:var(--blue-l);color:var(--blue)" id="htcnt">0</span></div>
+    <div class="tab" data-pt="contracts" onclick="ptab('contracts')">合同状态</div>
+  </div>
+  <!-- audit tab -->
+  <div id="pt-audit">
+    <div class="pflow" id="pflow">
+      <div class="pfs active" id="pf1"><div class="pfn">1</div><div class="pfl" data-zh="上传文件" data-en="Upload">上传文件</div></div><span class="pfarr">›</span>
+      <div class="pfs" id="pf2"><div class="pfn">2</div><div class="pfl" data-zh="单位确认" data-en="Unit Confirm">单位确认</div></div><span class="pfarr">›</span>
+      <div class="pfs" id="pf3"><div class="pfn">3</div><div class="pfl" data-zh="审核中" data-en="Auditing">审核中</div></div><span class="pfarr">›</span>
+      <div class="pfs" id="pf4"><div class="pfn">4</div><div class="pfl" data-zh="查看结果" data-en="Results">查看结果</div></div>
+    </div>
+    <!-- upload -->
+    <div id="pp-upload">
+      <div class="notice"><span style="color:var(--blue);font-size:14px;flex-shrink:0">ℹ</span><span id="_notice">需上传两个文件：<strong>项目报价文件</strong>（供应商报价）和<strong>年框价格文件</strong>（年框协议价）。系统按 Sheet 名称自动匹配，全部本地计算，文件不会上传到任何服务器。</span></div>
+      <div class="upload-grid">
+        <div class="dz dz-proj" id="dz-proj" ondragover="dzDg(event,'proj')" ondragleave="dzLv('proj')" ondrop="dzDp(event,'proj')">
+          <input type="file" accept=".xlsx,.xls" onchange="dzSl(event,'proj')">
+          <div class="dz-ck">✓</div><div class="dz-ico">📋</div>
+          <div class="dz-tag" data-zh="文件一" data-en="File 1">文件一</div><div class="dz-lbl" data-zh="项目报价文件" data-en="Project Quote File">项目报价文件</div>
+          <div class="dz-hint" data-zh="拖入或点击 .xlsx" data-en="Drag or click .xlsx">拖入或点击 .xlsx</div><div class="dz-fn" id="fn-proj"></div>
+        </div>
+        <div class="dz dz-ann" id="dz-ann" ondragover="dzDg(event,'ann')" ondragleave="dzLv('ann')" ondrop="dzDp(event,'ann')">
+          <input type="file" accept=".xlsx,.xls" onchange="dzSl(event,'ann')">
+          <div class="dz-ck">✓</div><div class="dz-ico">📁</div>
+          <div class="dz-tag" data-zh="文件二" data-en="File 2">文件二</div><div class="dz-lbl" data-zh="年框价格文件" data-en="Annual Framework File">年框价格文件</div>
+          <div class="dz-hint" data-zh="拖入或点击 .xlsx" data-en="Drag or click .xlsx">拖入或点击 .xlsx</div><div class="dz-fn" id="fn-ann"></div>
+        </div>
+      </div>
+      <div class="pw" id="scan-pw"><div class="pf" id="scan-pf"></div></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-scan" onclick="startScan()" disabled><span data-zh="扫描单位差异 →" data-en="Scan Units →">扫描单位差异 →</span></button>
+        <button class="btn btn-ghost" onclick="resetAudit()"><span data-zh="↺ 重置" data-en="↺ Reset">↺ 重置</span></button>
+      </div>
+      <div class="logbox" id="alog"></div>
+    </div>
+    <!-- confirm -->
+    <div id="pp-confirm" style="display:none">
+      <div class="cm"><span style="font-size:13px;font-weight:600;color:var(--g600)" id="ctitle">—</span><span style="font-family:var(--mono);font-size:12px;color:var(--g400)" id="ccnt">0/0</span></div>
+      <div class="cpw"><div class="cpf" id="cpf"></div></div>
+      <div id="ccards"></div>
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn btn-blue" id="btn-run" onclick="runCheck()" disabled><span data-zh="开始正式审核 →" data-en="Start Audit →">开始正式审核 →</span></button>
+        <button class="btn btn-ghost" onclick="goPhase('upload')"><span data-zh="← 返回" data-en="← Back">← 返回</span></button>
+        <span id="cpending" style="font-size:12px;color:var(--red);font-weight:600;margin-left:4px"></span>
+      </div>
+    </div>
+    <!-- running -->
+    <div id="pp-running" style="display:none">
+      <div class="rc2"><div class="spin"></div><div style="font-size:18px;font-weight:800;color:var(--black);margin-bottom:6px"><span data-zh="正在审核中..." data-en="Auditing...">正在审核中...</span></div><div style="font-size:13px;color:var(--g500)"><span data-zh="按确认的单位规则逐一比对所有报价项" data-en="Comparing all items against confirmed unit rules">按确认的单位规则逐一比对所有报价项</span></div></div>
+      <div class="pw show"><div class="pf" id="run-pf"></div></div>
+      <div class="rlog" id="rlog"></div>
+    </div>
+    <!-- result -->
+    <div id="pp-result" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+        <div><div style="font-size:18px;font-weight:800;color:var(--black);display:flex;align-items:center;gap:10px"><span data-zh="审核完成" data-en="Audit Complete">审核完成</span> <span style="background:var(--green-l);color:var(--green);font-size:11px;font-weight:700;padding:3px 12px;border-radius:20px;font-family:var(--mono)">DONE</span></div><div style="font-size:12px;color:var(--g500);margin-top:3px" id="rfi">—</div></div>
+        <div class="btn-row"><button class="btn btn-green btn-sm" onclick="exportExcel()"><span data-zh="↓ 导出 Excel" data-en="↓ Export Excel">↓ 导出 Excel</span></button><button class="btn btn-ghost btn-sm" onclick="resetAudit()"><span data-zh="↺ 重新审核" data-en="↺ Re-audit">↺ 重新审核</span></button></div>
+      </div>
+      <div class="kpi-grid" style="margin-bottom:20px">
+        <div class="kpi kpi-green"><div class="kpi-lbl" data-zh="比对合规" data-en="Compliant">比对合规</div><div class="kpi-val" id="r-ok">0</div><div class="kpi-d" data-zh="项，价格在年框内" data-en="items within price">项，价格在年框内</div></div>
+        <div class="kpi kpi-red"><div class="kpi-lbl" data-zh="超出年框" data-en="Over Framework">超出年框</div><div class="kpi-val" id="r-exc">0</div><div class="kpi-d" id="r-amt">超标总额 —</div></div>
+        <div class="kpi" style="background:var(--white);border:1px solid var(--g200);box-shadow:var(--ss)"><div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--amber);border-radius:3px 3px 0 0"></div><div class="kpi-lbl" data-zh="待人工审核" data-en="Manual Review">待人工审核</div><div class="kpi-val" style="color:var(--amber)" id="r-man">0</div><div class="kpi-d" data-zh="项需人工判断" data-en="items need review">项需人工判断</div></div>
+        <div class="kpi kpi-blue"><div class="kpi-lbl" data-zh="单位不匹配" data-en="Unit Mismatch">单位不匹配</div><div class="kpi-val" id="r-unit">0</div><div class="kpi-d" data-zh="已转人工审核" data-en="transferred to manual">已转人工审核</div></div>
+      </div>
+      <div class="tabs">
+        <div class="tab" data-rt="ok" onclick="rtab('ok')">比对合规 <span class="tbadge" id="badge-ok" style="background:var(--green-l);color:var(--green)">0</span></div>
+        <div class="tab active" data-rt="exc" onclick="rtab('exc')">超出年框 <span class="tbadge" id="badge-exc" style="background:var(--red-l);color:var(--red)">0</span></div>
+        <div class="tab" data-rt="man" onclick="rtab('man')">待人工审核 <span class="tbadge" id="badge-man" style="background:var(--amber-l);color:var(--amber)">0</span></div>
+        <div class="tab" data-rt="unit" onclick="rtab('unit')">单位不匹配 <span class="tbadge" id="badge-unit" style="background:var(--blue-l);color:var(--blue)">0</span></div>
+      </div>
+      <div id="rp-ok" style="display:none">
+        <div class="tbar"><input class="search" placeholder="搜索报价项…" oninput="filt('ok',this.value)"><span class="rc" id="cnt-ok"></span></div>
+        <div class="twrap"><div class="tscroll"><table><thead id="thead-ok"><tr><th>#</th><th>Sheet</th><th>报价项</th><th class="td-r">项目单价</th><th class="td-r">年框单价</th><th>匹配单位</th><th>位置</th></tr></thead><tbody id="tbody-ok"></tbody></table></div></div>
+      </div>
+      <div id="rp-exc">
+        <div class="tbar"><input class="search" placeholder="搜索报价项…" oninput="filt('exc',this.value)"><span class="rc" id="cnt-exc"></span></div>
+        <div class="twrap"><div class="tscroll"><table><thead id="thead-exc"><tr><th>#</th><th>Sheet</th><th>报价项</th><th class="td-r">项目单价</th><th class="td-r">年框单价</th><th class="td-r">超标金额</th><th class="td-r">超标比例</th><th>匹配单位</th><th>位置</th></tr></thead><tbody id="tbody-exc"></tbody></table></div></div>
+      </div>
+      <div id="rp-man" style="display:none">
+        <div class="tbar"><input class="search" placeholder="搜索报价项…" oninput="filt('man',this.value)"><span class="rc" id="cnt-man"></span></div>
+        <div class="twrap"><div class="tscroll"><table><thead id="thead-man"><tr><th>#</th><th>Sheet</th><th>一级</th><th>二级</th><th>三级</th><th>四级</th><th class="td-r">单价</th><th>数量1</th><th>单位1</th><th>数量2</th><th>单位2</th><th class="td-r">总价</th><th>垫付费</th><th>服务费</th><th>供应商描述</th><th>原因</th></tr></thead><tbody id="tbody-man"></tbody></table></div></div>
+      </div>
+      <div id="rp-unit" style="display:none">
+        <div class="tbar"><input class="search" placeholder="搜索报价项…" oninput="filt('unit',this.value)"><span class="rc" id="cnt-unit"></span></div>
+        <div class="twrap"><div class="tscroll"><table><thead id="thead-unit"><tr><th>#</th><th>Sheet</th><th>一级</th><th>二级</th><th>三级</th><th>四级</th><th class="td-r">单价</th><th>单位1</th><th>单位2</th><th>原因</th></tr></thead><tbody id="tbody-unit"></tbody></table></div></div>
+      </div>
+    </div>
+  </div>
+  <!-- history tab -->
+  <div id="pt-history" style="display:none">
+    <div class="hsplit">
+      <div><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--g400);margin-bottom:12px">审核记录</div><div class="hlp" id="hlist"><div class="empty"><div class="ei">📂</div><div class="et">暂无历史记录</div></div></div></div>
+      <div id="hdetail"><div class="empty" style="padding-top:80px"><div class="ei">👈</div><div class="et">选择左侧记录查看详情</div></div></div>
+    </div>
+  </div>
+  <!-- contracts tab -->
+  <div id="pt-contracts" style="display:none">
+    <div class="twrap"><div class="tscroll"><table><thead id="thead-ctr"><tr><th>合同编号</th><th>供应商</th><th>合同金额</th><th>签署日期</th><th>到期日期</th><th>剩余时间</th><th>状态</th></tr></thead><tbody>
+      <tr><td class="td-m" style="color:var(--blue)">CTR-2024-001</td><td>供应商 Alpha</td><td>¥840,000</td><td>2024-01</td><td>2024-12</td><td style="color:var(--amber);font-weight:700">14天</td><td><span class="badge badge-warn">即将到期</span></td></tr>
+      <tr><td class="td-m" style="color:var(--blue)">CTR-2024-002</td><td>供应商 Beta</td><td>¥1,200,000</td><td>2024-03</td><td>2025-03</td><td>3个月</td><td><span class="badge badge-ok">生效中</span></td></tr>
+      <tr><td class="td-m" style="color:var(--blue)">CTR-2024-003</td><td>供应商 Gamma</td><td>¥560,000</td><td>2024-06</td><td>2025-06</td><td>6个月</td><td><span class="badge badge-ok">生效中</span></td></tr>
+      <tr><td class="td-m" style="color:var(--blue)">CTR-2023-009</td><td>供应商 Delta</td><td>¥290,000</td><td>2023-09</td><td>2024-09</td><td style="color:var(--red);font-weight:700">已过期</td><td><span class="badge badge-err">已过期</span></td></tr>
+    </tbody></table></div></div>
+  </div>
+</div>
+<!-- ══ 物流 ══ -->
+<div class="page" id="page-logistics">
+  <div class="ph"><div><div class="ph-title" data-zh="物流与网络分析" data-en="Logistics & Network">物流与网络分析</div><div class="ph-sub" data-zh="配送时效 · 仓储效能 · 成本模拟" data-en="Lead Time · Warehouse · Cost Simulation">配送时效 · 仓储效能 · 成本模拟</div></div></div>
+  <div class="kpi-grid">
+    <div class="kpi kpi-blue"><div class="kpi-lbl">平均到货时效</div><div class="kpi-val">4.8天</div><div class="kpi-d up">↓ 较目标快0.4天</div></div>
+    <div class="kpi kpi-green"><div class="kpi-lbl">网络成本指数</div><div class="kpi-val">0.84</div><div class="kpi-d up">效率持续提升</div></div>
+    <div class="kpi kpi-amber"><div class="kpi-lbl">延迟率</div><div class="kpi-val">7.1%</div><div class="kpi-d down">↑ 较上月+1.2%</div></div>
+    <div class="kpi kpi-red"><div class="kpi-lbl">APAC 超时均值</div><div class="kpi-val">+3.2天</div><div class="kpi-d down">通道性能下降</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ct">各区域到货时效 <span class="ctb">实际 vs 目标</span></div><div class="cw" style="height:200px"><canvas id="c-log"></canvas></div></div>
+    <div class="card">
+      <div class="ct" data-zh="运费 × 时效模拟器" data-en="Cost × Time Simulator">运费 × 时效模拟器</div>
+      <div style="margin-bottom:12px"><label style="font-size:12px;color:var(--g500);font-weight:600;display:block;margin-bottom:6px">运输方式</label><select id="lmode" onchange="logSim()" style="width:100%;padding:8px 12px;border:1.5px solid var(--g200);border-radius:10px;font-family:var(--sans);font-size:13px;background:var(--white)"><option>空运</option><option selected>海运</option><option>铁路</option><option>公路</option></select></div>
+      <div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--g500);font-weight:600;margin-bottom:4px"><span data-zh="距离 (km)" data-en="Distance (km)">距离 (km)</span><span id="ld-v" style="font-family:var(--mono);color:var(--blue)">5000</span></div><input type="range" min="200" max="15000" value="5000" id="ldist" oninput="logSim()" style="width:100%;accent-color:var(--blue)"></div>
+      <div style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--g500);font-weight:600;margin-bottom:4px"><span data-zh="货重 (吨)" data-en="Weight (ton)">货重 (吨)</span><span id="lw-v" style="font-family:var(--mono);color:var(--blue)">20</span></div><input type="range" min="1" max="100" value="20" id="lweight" oninput="logSim()" style="width:100%;accent-color:var(--blue)"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="background:var(--g50);border-radius:12px;padding:14px;text-align:center;border:1px solid var(--g200)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--g400);margin-bottom:6px" id="_lcost_lbl">预估费用</div><div style="font-size:22px;font-weight:800;font-family:var(--mono);color:var(--amber)" id="lcost">—</div></div>
+        <div style="background:var(--g50);border-radius:12px;padding:14px;text-align:center;border:1px solid var(--g200)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--g400);margin-bottom:6px" id="_ldays_lbl">预估天数</div><div style="font-size:22px;font-weight:800;font-family:var(--mono);color:var(--blue)" id="ldays">—</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ══ 库存 ══ -->
+<div class="page" id="page-inventory">
+  <div class="ph"><div><div class="ph-title" data-zh="库存与生产规划" data-en="Inventory Planning">库存与生产规划</div><div class="ph-sub" data-zh="需求预测 · 安全库存 · 补货触发" data-en="Demand Forecast · Safety Stock · Reorder">需求预测 · 安全库存 · 补货触发</div></div></div>
+  <div class="kpi-grid">
+    <div class="kpi kpi-blue"><div class="kpi-lbl">在追踪 SKU</div><div class="kpi-val">284</div><div class="kpi-d">跨4个仓库</div></div>
+    <div class="kpi kpi-green"><div class="kpi-lbl">库存健康</div><div class="kpi-val">241</div><div class="kpi-d up">84.9% 在目标范围</div></div>
+    <div class="kpi kpi-amber"><div class="kpi-lbl">积压风险</div><div class="kpi-val">28</div><div class="kpi-d down">9.9% 需关注</div></div>
+    <div class="kpi kpi-red"><div class="kpi-lbl">断货风险</div><div class="kpi-val">15</div><div class="kpi-d down">5.3% 紧急</div></div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="ct" data-zh="需求预测模拟器" data-en="Demand Simulator">需求预测模拟器</div>
+      <div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--g500);font-weight:600;margin-bottom:4px"><span data-zh="月基础需求" data-en="Monthly Demand">月基础需求</span><span id="id-v" style="font-family:var(--mono);color:var(--blue)">800</span></div><input type="range" min="100" max="2000" value="800" step="50" id="idem" oninput="invSim()" style="width:100%;accent-color:var(--blue)"></div>
+      <div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--g500);font-weight:600;margin-bottom:4px"><span data-zh="需求波动率" data-en="Demand Variance">需求波动率</span><span id="iv-v" style="font-family:var(--mono);color:var(--blue)">15%</span></div><input type="range" min="0" max="50" value="15" id="ivar" oninput="invSim()" style="width:100%;accent-color:var(--blue)"></div>
+      <div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--g500);font-weight:600;margin-bottom:4px"><span data-zh="补货前置期(天)" data-en="Lead Time (days)">补货前置期(天)</span><span id="il-v" style="font-family:var(--mono);color:var(--blue)">7</span></div><input type="range" min="1" max="30" value="7" id="ilt" oninput="invSim()" style="width:100%;accent-color:var(--blue)"></div>
+      <div style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--g500);font-weight:600;margin-bottom:4px"><span data-zh="安全库存率" data-en="Safety Stock %">安全库存率</span><span id="is-v" style="font-family:var(--mono);color:var(--blue)">20%</span></div><input type="range" min="5" max="50" value="20" id="isaf" oninput="invSim()" style="width:100%;accent-color:var(--blue)"></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+        <div style="background:var(--g50);border-radius:12px;padding:12px;text-align:center;border:1px solid var(--g200)"><div style="font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--g400);margin-bottom:4px">再订货点</div><div style="font-size:20px;font-weight:800;font-family:var(--mono);color:var(--amber)" id="i-rop">—</div></div>
+        <div style="background:var(--g50);border-radius:12px;padding:12px;text-align:center;border:1px solid var(--g200)"><div style="font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--g400);margin-bottom:4px">安全库存</div><div style="font-size:20px;font-weight:800;font-family:var(--mono);color:var(--blue)" id="i-ss">—</div></div>
+        <div style="background:var(--g50);border-radius:12px;padding:12px;text-align:center;border:1px solid var(--g200)"><div style="font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--g400);margin-bottom:4px">经济订货量</div><div style="font-size:20px;font-weight:800;font-family:var(--mono);color:var(--green)" id="i-eoq">—</div></div>
+      </div>
+    </div>
+    <div class="card"><div class="ct">需求预测图 <span class="ctb">模拟数据</span></div><div class="cw" style="height:240px"><canvas id="c-inv"></canvas></div></div>
+  </div>
+</div>
+<!-- ══ 决策 ══ -->
+<div class="page" id="page-decisions">
+  <div class="ph"><div><div class="ph-title" data-zh="决策优化引擎" data-en="Decision Engine">决策优化引擎</div><div class="ph-sub" data-zh="综合各模块数据 · 生成优先级行动建议" data-en="Aggregated insights · Priority actions">综合各模块数据 · 生成优先级行动建议</div></div></div>
+  <div class="kpi-grid">
+    <div class="kpi kpi-green"><div class="kpi-lbl" data-zh="可节省金额" data-en="Identified Savings">可节省金额</div><div class="kpi-val">¥284K</div><div class="kpi-d up">本季度可执行</div></div>
+    <div class="kpi kpi-red"><div class="kpi-lbl" data-zh="紧急风险" data-en="Critical Risks">紧急风险</div><div class="kpi-val">3</div><div class="kpi-d down">需立即处理</div></div>
+    <div class="kpi kpi-amber"><div class="kpi-lbl" data-zh="优化得分" data-en="Optimization Score">优化得分</div><div class="kpi-val" id="dec-score">71</div><div class="kpi-d up">↑ 较上月+4分</div></div>
+    <div class="kpi kpi-blue"><div class="kpi-lbl" data-zh="待决策项" data-en="Pending Decisions">待决策项</div><div class="kpi-val">8</div><div class="kpi-d">等待审批</div></div>
+  </div>
+  <div class="g2">
+    <div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--g400);margin-bottom:14px">优先行动建议</div><div id="dec-ins"></div></div>
+    <div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--g400);margin-bottom:14px">节省金额分解</div>
+      <div class="card" style="margin-bottom:16px"><div class="cw" style="height:200px"><canvas id="c-dec"></canvas></div></div>
+      <div class="card">
+        <div class="ct">模块健康度</div>
+        <div class="mr"><span class="mn">采购模块</span><span class="mv" id="dec-ph" style="color:var(--amber)">74/100</span></div>
+        <div class="br"><div class="bf" id="dec-pb" style="width:74%;background:var(--amber)"></div></div>
+        <div class="mr"><span class="mn">物流模块</span><span class="mv" style="color:var(--blue)">81/100</span></div>
+        <div class="br"><div class="bf" style="width:81%;background:var(--blue)"></div></div>
+        <div class="mr"><span class="mn">库存模块</span><span class="mv" style="color:var(--amber)">68/100</span></div>
+        <div class="br"><div class="bf" style="width:68%;background:var(--amber)"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div></div>
+<script>
+// ══ 常量 ══
+const SKIP=new Set(['报价汇总及使用说明','报价汇总']);
+const PH=new Set(['其他','其他-其他','']);
+const DS=3,PI=9;
+const UA={台:'个',件:'个',只:'个',幅:'张',块:'个',场:'次',趟:'次'};
+const G={projWb:null,annWb:null,pf:'',af:'',mis:[],dec:{},ea:new Set(),exc:[],man:[],ok:[],unitItems:[],ai:null,hist:[]};
+// ══ tools ══
+const sf=v=>{if(v==null||v==='')return null;const n=parseFloat(v);return isNaN(n)?null:n;};
+const ss=v=>v!=null?String(v).trim():'';
+const xe=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const fm=n=>Number(n).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const nr=u=>UA[u]||u;
+const slp=ms=>new Promise(r=>setTimeout(r,ms));
+const setw=(id,p)=>document.getElementById(id).style.width=p+'%';
+function gin(row){for(const c of[5,4,3,2]){const v=ss(row[c]);if(v&&!PH.has(v))return v;}return null;}
+function s2r(s){return XLSX.utils.sheet_to_json(s,{header:1,defval:null});}
+function fds(rows){for(let i=0;i<Math.min(rows.length,10);i++){if(rows[i]&&rows[i].some(v=>ss(v)==='一级报价项'))return i+1;}return DS;}
+function bai(wb){
+  const idx={};
+  for(const sn of wb.SheetNames){if(SKIP.has(sn))continue;const rows=s2r(wb.Sheets[sn]);const st=fds(rows);idx[sn]={};
+    for(let i=st;i<rows.length;i++){const r=rows[i],nm=gin(r);if(!nm)continue;const p=sf(r[PI]);if(p==null)continue;(idx[sn][nm]||(idx[sn][nm]=[])).push({price:p,u1:ss(r[11]),u2:ss(r[13])});}}
+  return idx;
+}
+function mu(pp,pu1,pu2,ent,ex){
+  const np1=nr(pu1),np2=pu2?nr(pu2):'',cands=[];
+  for(const e of ent){
+    const na1=nr(e.u1),na2=e.u2?nr(e.u2):'';
+    const u1ok=np1===na1||ex.has(`${np1}|${na1}`)||ex.has(`${na1}|${np1}`);if(!u1ok)continue;
+    if(np2&&na2){const u2ok=np2===na2||ex.has(`${np2}|${na2}`)||ex.has(`${na2}|${np2}`);if(!u2ok)continue;}
+    cands.push({price:e.price,label:e.u2?`${e.u1}/${e.u2}`:e.u1});
+  }
+  const ad=ent.map(e=>e.u2?`(${e.u1}/${e.u2})`:`(${e.u1})`).join('、');
+  if(!cands.length)return{status:'no_unit_match',ad};
+  const best=cands.reduce((a,b)=>a.price<b.price?a:b);
+  if(best.price===0)return{status:'annual_zero',ad,ap:best.price,mu:best.label};
+  if(pp>best.price)return{status:'exceeded',ad,ap:best.price,mu:best.label};
+  return{status:'ok',ad,ap:best.price,mu:best.label};
+}
+// ══ nav ══
+function nav(p,el){document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));el.classList.add('active');document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('active'));document.getElementById('page-'+p).classList.add('active');}
+setInterval(()=>{document.getElementById('clock').textContent=new Date().toLocaleTimeString('zh-CN');},1000);
+// ══ proc tabs ══
+function ptab(t){
+  ['audit','history','contracts'].forEach(x=>{document.getElementById('pt-'+x).style.display=x===t?'block':'none';});
+  document.querySelectorAll('[data-pt]').forEach(el=>el.classList.toggle('active',el.dataset.pt===t));
+}
+// ══ proc phases ══
+function goPhase(ph){
+  const phases=['upload','confirm','running','result'];
+  phases.forEach((p,i)=>{
+    document.getElementById('pp-'+p).style.display=p===ph?'block':'none';
+    const el=document.getElementById('pf'+(i+1));
+    el.className='pfs'+(ph===p?' active':phases.indexOf(ph)>i?' done':'');
+  });
+}
+// ══ file upload ══
+function dzDg(e,t){e.preventDefault();document.getElementById('dz-'+t).classList.add('over');}
+function dzLv(t){document.getElementById('dz-'+t).classList.remove('over');}
+function dzDp(e,t){e.preventDefault();dzLv(t);lf(e.dataTransfer.files[0],t);}
+function dzSl(e,t){lf(e.target.files[0],t);}
+function lf(file,type){
+  if(!file)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{const wb=XLSX.read(ev.target.result,{type:'array',cellText:false});G[type+'Wb']=wb;G[type==='proj'?'pf':'af']=file.name;
+      document.getElementById('dz-'+type).classList.add('done');document.getElementById('fn-'+type).textContent=file.name;
+      alog(`已加载：${file.name}（${wb.SheetNames.length} 个 Sheet）`,'ok');
+      document.getElementById('btn-scan').disabled=!(G.projWb&&G.annWb);
+    }catch(err){alog(`读取失败：${err.message}`,'err');}
+  };r.readAsArrayBuffer(file);
+}
+function alog(msg,type=''){const el=document.getElementById('alog');el.classList.add('show');const d=document.createElement('div');if(type)d.className='l'+type;d.textContent=`[${new Date().toLocaleTimeString('zh-CN')}] ${msg}`;el.appendChild(d);el.scrollTop=el.scrollHeight;}
+// ══ scan ══
+async function startScan(){
+  document.getElementById('scan-pw').classList.add('show');setw('scan-pf',10);alog('建立年框索引...');await slp(30);
+  const ai=bai(G.annWb);setw('scan-pf',45);alog('扫描单位差异...');await slp(30);
+  const seen={};
+  for(const sn of G.projWb.SheetNames){if(SKIP.has(sn)||!ai[sn])continue;const rows=s2r(G.projWb.Sheets[sn]);const st=fds(rows);
+    for(let i=st;i<rows.length;i++){const r=rows[i],p=sf(r[PI]);if(!p||p<=0)continue;const nm=gin(r);if(!nm||!ai[sn][nm])continue;
+      const pu1=ss(r[11]),pu2=ss(r[13]);const res=mu(p,pu1,pu2,ai[sn][nm],new Set());
+      if(res.status==='no_unit_match'){const k=`${nm}||${pu1}||${pu2}||${res.ad}`;seen[k]=(seen[k]||{name:nm,pu1,pu2,ad:res.ad,count:0});seen[k].count++;}
+    }
+  }
+  G.mis=Object.values(seen);G.ai=ai;setw('scan-pf',100);
+  if(!G.mis.length){alog('无单位差异，直接审核...','ok');await slp(300);goPhase('running');await slp(100);await doCheck();return;}
+  alog(`发现 ${G.mis.length} 种单位差异，请确认`,'warn');await slp(200);buildCC();goPhase('confirm');
+}
+// ══ confirm ══
+function buildCC(){
+  G.dec={};const c=document.getElementById('ccards');c.innerHTML='';
+  document.getElementById('ctitle').textContent=`共 ${G.mis.length} 种单位不匹配`;updCP();
+  G.mis.forEach((m,i)=>{
+    const ps=m.pu2?`${m.pu1} / ${m.pu2}`:m.pu1;const ac=m.ad.replace(/[()（）]/g,'').replace(/、/g,' · ');
+    const d=document.createElement('div');d.className='uc';d.id=`card-${i}`;
+    d.innerHTML=`<div class="uch"><div class="ucb">差异 ${i+1}/${G.mis.length} · ${m.count} 行</div><div class="ucn">${xe(m.name)}</div><div class="ucmp"><div class="ub proj"><div class="ub-lbl">项目单位</div><div class="ub-val">${xe(ps)}</div></div><div class="uvs">vs</div><div class="ub ann"><div class="ub-lbl">年框单位</div><div class="ub-val">${xe(ac)}</div></div></div></div><div class="ucf"><button class="db yes" onclick="decide(${i},'y')">✓ 视为等价</button><button class="db no" onclick="decide(${i},'n')">✗ 不等价</button><span class="ucc">${m.count} 行受影响</span></div>`;
+    c.appendChild(d);
+  });
+}
+function decide(i,a){
+  G.dec[i]=a;const c=document.getElementById(`card-${i}`);
+  c.querySelectorAll('.db').forEach(b=>b.classList.remove('sy','sn'));
+  c.querySelector(`.db.${a==='y'?'yes':'no'}`).classList.add(`s${a}`);
+  c.classList.add('decided');updCP();
+}
+function updCP(){
+  const tot=G.mis.length,done=Object.keys(G.dec).length;
+  document.getElementById('ccnt').textContent=`${done} / ${tot} 已确认`;
+  document.getElementById('cpf').style.width=`${tot?done/tot*100:0}%`;
+  const p=tot-done;document.getElementById('cpending').textContent=p>0?`还有 ${p} 项未确认`:'';
+  document.getElementById('btn-run').disabled=done<tot;
+}
+// ══ run ══
+async function runCheck(){
+  G.ea=new Set();
+  G.mis.forEach((m,i)=>{if(G.dec[i]==='y'){const np1=nr(m.pu1);const parts=m.ad.replace(/[()（）]/g,'').split('、');for(const p of parts){const au1=nr(p.split('/')[0].trim());G.ea.add(`${np1}|${au1}`);G.ea.add(`${au1}|${np1}`);}}});
+  goPhase('running');await slp(80);await doCheck();
+}
+async function doCheck(){
+  const ai=G.ai||bai(G.annWb);G.exc=[];G.man=[];let matched=0,num=0;
+  const rl=document.getElementById('rlog');const sheets=G.projWb.SheetNames.filter(n=>!SKIP.has(n));
+  for(let si=0;si<sheets.length;si++){
+    const sn=sheets[si];setw('run-pf',Math.round(10+80*si/sheets.length));
+    rl.innerHTML+=`<span style="color:#475569">→ </span><span style="color:#94a3b8">检查：</span><span style="color:#e2e8f0">${xe(sn)}</span><br>`;rl.scrollTop=rl.scrollHeight;await slp(8);
+    if(!ai[sn]){const rows=s2r(G.projWb.Sheets[sn]);const st=fds(rows);for(let i=st;i<rows.length;i++){const r=rows[i],p=sf(r[PI]);if(!p||p<=0)continue;G.man.push({sheet:sn,row:i+1,rd:r,reason:'年框无对应Sheet'});}continue;}
+    const rows=s2r(G.projWb.Sheets[sn]);const st=fds(rows);
+    for(let ri=st;ri<rows.length;ri++){
+      const r=rows[ri],p=sf(r[PI]);if(!p||p<=0)continue;const nm=gin(r);if(!nm)continue;
+      const pu1=ss(r[11]),pu2=ss(r[13]);
+      if(!ai[sn][nm]){G.man.push({sheet:sn,row:ri+1,rd:r,reason:'年框无此报价项'});continue;}
+      const res=mu(p,pu1,pu2,ai[sn][nm],G.ea);
+      if(res.status==='no_unit_match'){G.man.push({sheet:sn,row:ri+1,rd:r,reason:`单位不匹配：项目(${pu1}${pu2?'/'+pu2:''})，年框${res.ad}`});num++;}
+      else if(res.status==='annual_zero'){G.man.push({sheet:sn,row:ri+1,rd:r,reason:'年框单价为0，需人工确认'});}
+      else if(res.status==='exceeded'){matched++;G.exc.push({sheet:sn,row:ri+1,l1:ss(r[2]),l2:ss(r[3]),l3:ss(r[4]),l4:ss(r[5]),price:p,ap:res.ap,mu:res.mu,diff:p-res.ap});}
+      else{matched++;G.ok.push({sheet:sn,row:ri+1,l1:ss(r[2]),l2:ss(r[3]),l3:ss(r[4]),l4:ss(r[5]),price:p,ap:res.ap,mu:res.mu});}
+    }
+  }
+  setw('run-pf',100);await slp(300);
+  const et=G.exc.reduce((a,i)=>a+i.diff,0);
+  document.getElementById('r-ok').textContent=matched;document.getElementById('r-exc').textContent=G.exc.length;
+  document.getElementById('r-amt').textContent=`超标总额 ¥${fm(et)}`;document.getElementById('r-man').textContent=G.man.length;
+  document.getElementById('r-unit').textContent=num;document.getElementById('badge-exc').textContent=G.exc.length;document.getElementById('badge-man').textContent=G.man.length;
+  document.getElementById('rfi').textContent=`${G.pf} · ${new Date().toLocaleString('zh-CN')}`;
+  G.unitItems=G.man.filter(i=>i.reason.includes('单位不匹配'));
+  document.getElementById('badge-ok').textContent=G.ok.length;
+  document.getElementById('badge-unit').textContent=G.unitItems.length;
+  rOk(G.ok);rExc(G.exc);rMan(G.man);rUnit(G.unitItems);
+  rtab('exc');
+  goPhase('result');saveHist(matched,G.exc.length,et,G.man.length,num);updOv();
+}
+// ══ render tables ══
+function rOk(items){
+  const tb=document.getElementById('tbody-ok');
+  document.getElementById('cnt-ok').textContent=items.length?`共 ${items.length} 条`:'';
+  if(!items.length){tb.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="ei">📋</div><div class="et">暂无合规项</div></div></td></tr>`;return;}
+  tb.innerHTML=items.map((it,i)=>`<tr><td class="td-dim">${i+1}</td><td class="td-dim">${xe(it.sheet)}</td><td class="td-name">${xe(it.l4||it.l3||it.l2||it.l1)}</td><td class="td-r td-m">¥${fm(it.price)}</td><td class="td-r ok-v">¥${fm(it.ap)}</td><td class="td-dim">${xe(it.mu)}</td><td class="td-dim">第${it.row}行</td></tr>`).join('');
+}
+function rUnit(items){
+  const tb=document.getElementById('tbody-unit');
+  document.getElementById('cnt-unit').textContent=items.length?`共 ${items.length} 条`:'';
+  if(!items.length){tb.innerHTML=`<tr><td colspan="10"><div class="empty"><div class="ei">✅</div><div class="et">无单位不匹配项</div></div></td></tr>`;return;}
+  tb.innerHTML=items.map((it,i)=>{const r=it.rd;return`<tr><td class="td-dim">${i+1}</td><td class="td-dim">${xe(it.sheet)}</td><td>${xe(ss(r[2]))}</td><td>${xe(ss(r[3]))}</td><td>${xe(ss(r[4]))}</td><td class="td-name">${xe(ss(r[5]))}</td><td class="td-r td-m">${sf(r[9])!=null?'¥'+fm(sf(r[9])):'-'}</td><td class="td-dim">${xe(ss(r[11]))}</td><td class="td-dim">${xe(ss(r[13]))}</td><td><span class="rt rt-unit">${xe(it.reason)}</span></td></tr>`;}).join('');
+}
+function rExc(items){
+  const tb=document.getElementById('tbody-exc');document.getElementById('cnt-exc').textContent=items.length?`共 ${items.length} 条`:'';
+  if(!items.length){tb.innerHTML=`<tr><td colspan="9"><div class="empty"><div class="ei">✅</div><div class="et">所有报价项均在年框范围内</div></div></td></tr>`;return;}
+  tb.innerHTML=items.map((it,i)=>{const ratio=it.diff/it.ap;const bc=ratio>.5?'badge-err':ratio>.2?'badge-warn':'badge-gray';return`<tr><td class="td-dim">${i+1}</td><td class="td-dim">${xe(it.sheet)}</td><td class="td-name">${xe(it.l4||it.l3||it.l2||it.l1)}</td><td class="td-r td-m">¥${fm(it.price)}</td><td class="td-r ok-v">¥${fm(it.ap)}</td><td class="td-r exc-v">¥${fm(it.diff)}</td><td class="td-r"><span class="badge ${bc}">+${(ratio*100).toFixed(1)}%</span></td><td class="td-dim">${xe(it.mu)}</td><td class="td-dim">第${it.row}行</td></tr>`;}).join('');
+}
+function rMan(items){
+  const tb=document.getElementById('tbody-man');document.getElementById('cnt-man').textContent=items.length?`共 ${items.length} 条`:'';
+  if(!items.length){tb.innerHTML=`<tr><td colspan="16"><div class="empty"><div class="ei">✅</div><div class="et">无需人工审核的项目</div></div></td></tr>`;return;}
+  tb.innerHTML=items.map((it,i)=>{const r=it.rd;const iu=it.reason.includes('单位不匹配');const inf=it.reason.includes('无此报价项');const iz=it.reason.includes('单价为0');const cls=iu?'rt-unit':inf?'rt-nf':iz?'rt-zero':'rt-sh';return`<tr><td class="td-dim">${i+1}</td><td class="td-dim">${xe(it.sheet)}</td><td>${xe(ss(r[2]))}</td><td>${xe(ss(r[3]))}</td><td>${xe(ss(r[4]))}</td><td class="td-name">${xe(ss(r[5]))}</td><td class="td-r td-m">${sf(r[9])!=null?'¥'+fm(sf(r[9])):'-'}</td><td class="td-dim">${xe(ss(r[10]))}</td><td class="td-dim">${xe(ss(r[11]))}</td><td class="td-dim">${xe(ss(r[12]))}</td><td class="td-dim">${xe(ss(r[13]))}</td><td class="td-r td-m">${sf(r[14])!=null?'¥'+fm(sf(r[14])):'-'}</td><td class="td-dim">${xe(ss(r[15]))}</td><td class="td-dim">${xe(ss(r[16]))}</td><td style="max-width:140px;font-size:11px;color:var(--g500)">${xe(ss(r[8]))}</td><td><span class="rt ${cls}">${xe(it.reason)}</span></td></tr>`;}).join('');
+}
+function rtab(t){
+  document.querySelectorAll('[data-rt]').forEach(x=>x.classList.toggle('active',x.dataset.rt===t));
+  ['ok','exc','man','unit'].forEach(p=>document.getElementById('rp-'+p).style.display=p===t?'block':'none');
+}
+function filt(type,kw){
+  const q=kw.trim().toLowerCase();
+  if(type==='exc') rExc(q?G.exc.filter(i=>(i.l4||i.l3||i.l2||i.l1).toLowerCase().includes(q)):G.exc);
+  else if(type==='man') rMan(q?G.man.filter(i=>[i.rd[2],i.rd[3],i.rd[4],i.rd[5]].some(v=>ss(v).toLowerCase().includes(q))):G.man);
+  else if(type==='ok') rOk(q?G.ok.filter(i=>(i.l4||i.l3||i.l2||i.l1).toLowerCase().includes(q)):G.ok);
+  else if(type==='unit') rUnit(q?G.unitItems.filter(i=>[i.rd[2],i.rd[3],i.rd[4],i.rd[5]].some(v=>ss(v).toLowerCase().includes(q))):G.unitItems);
+}
+// ══ history ══
+function saveHist(matched,excCount,excTotal,manCount,unitMM){
+  G.hist.unshift({id:Date.now(),time:new Date().toLocaleString('zh-CN'),pf:G.pf,af:G.af,matched,excCount,excTotal,manCount,unitMM,excRate:matched+excCount>0?((excCount/(matched+excCount))*100).toFixed(1):0,exc:[...G.exc],man:[...G.man]});
+  rHL();document.getElementById('htcnt').textContent=G.hist.length;
+}
+function rHL(){
+  const el=document.getElementById('hlist');
+  if(!G.hist.length){el.innerHTML='<div class="empty"><div class="ei">📂</div><div class="et">暂无历史记录</div></div>';return;}
+  el.innerHTML=G.hist.map((r,i)=>`<div class="hi" id="hi-${r.id}" onclick="showHD(${r.id})"><div class="hn">#${G.hist.length-i}</div><div class="hinfo"><div class="hname">${xe(r.pf||'未命名')}</div><div class="hmeta">${r.time}</div></div><div class="hstats"><div class="hstat"><div class="hsv" style="color:var(--green)">${r.matched}</div><div class="hsl">合规</div></div><div class="hstat"><div class="hsv" style="color:var(--red)">${r.excCount}</div><div class="hsl">超标</div></div><div class="hstat"><div class="hsv" style="color:var(--amber)">${r.manCount}</div><div class="hsl">人工</div></div></div></div>`).join('');
+}
+function showHD(id){
+  document.querySelectorAll('.hi').forEach(el=>el.classList.remove('ah'));document.getElementById('hi-'+id).classList.add('ah');
+  const r=G.hist.find(h=>h.id===id);if(!r)return;
+  const tot=r.matched+r.excCount;const cr=tot>0?((r.matched/tot)*100).toFixed(1):0;
+  document.getElementById('hdetail').innerHTML=`<div class="card" style="margin-bottom:14px"><div class="ct">审核摘要</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px"><div style="background:var(--green-l);border-radius:12px;padding:14px;text-align:center"><div style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">合规率</div><div style="font-size:24px;font-weight:800;font-family:var(--mono);color:var(--green)">${cr}%</div></div><div style="background:var(--red-l);border-radius:12px;padding:14px;text-align:center"><div style="font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">超标总额</div><div style="font-size:24px;font-weight:800;font-family:var(--mono);color:var(--red)">¥${fmtK(r.excTotal)}</div></div><div style="background:var(--amber-l);border-radius:12px;padding:14px;text-align:center"><div style="font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">人工审核</div><div style="font-size:24px;font-weight:800;font-family:var(--mono);color:var(--amber)">${r.manCount}项</div></div></div><div style="font-size:11px;color:var(--g400);font-family:var(--mono)">项目：${xe(r.pf)} · 年框：${xe(r.af)}</div></div>${r.excCount>0?`<div class="card"><div class="ct">超标项（Top ${Math.min(5,r.excCount)}）</div><div class="twrap"><div class="tscroll"><table><thead><tr><th>报价项</th><th class="td-r">超标金额</th><th class="td-r">超标比例</th></tr></thead><tbody>${r.exc.slice(0,5).map(it=>`<tr><td class="td-name">${xe(it.l4||it.l3||it.l2||it.l1)}</td><td class="td-r exc-v">¥${fm(it.diff)}</td><td class="td-r"><span class="badge badge-err">+${((it.diff/it.ap)*100).toFixed(1)}%</span></td></tr>`).join('')}</tbody></table></div></div></div>`:'<div class="card"><div class="empty" style="padding:28px"><div class="ei">✅</div><div class="et">本次无超标项目</div></div></div>'}`;
+}
+function fmtK(n){return n>=10000?`${(n/10000).toFixed(1)}万`:fm(n);}
+// ══ overview update ══
+function updOv(){
+  if(!G.hist.length)return;
+  const r=G.hist[0];const tot=r.matched+r.excCount;const rate=tot>0?((r.matched/tot)*100).toFixed(1):0;
+  document.getElementById('ov-pr').textContent=rate+'%';document.getElementById('ov-pr-s').textContent=`最近审核 · ${r.time.split(' ')[0]}`;
+  document.getElementById('ov-ex').textContent='¥'+fmtK(r.excTotal);document.getElementById('ov-ex-s').textContent=`${r.excCount} 项超出年框`;
+  document.getElementById('ov-mn').textContent=r.manCount;document.getElementById('ov-mn-s').textContent='项待人工判断';
+  document.getElementById('ov-hc').textContent=G.hist.length;document.getElementById('ov-hc2').textContent=`${G.hist.length} 条`;
+  const h=Math.round(parseFloat(rate));
+  document.getElementById('dec-ph').textContent=`${h}/100`;document.getElementById('dec-ph').style.color=h>=85?'var(--green)':h>=70?'var(--amber)':'var(--red)';
+  document.getElementById('dec-pb').style.width=h+'%';document.getElementById('dec-pb').style.background=h>=85?'var(--green)':h>=70?'var(--amber)':'var(--red)';
+  document.getElementById('dec-score').textContent=Math.round(h*.6+81*.2+68*.2);
+  if(r.excCount>0){const nb=document.getElementById('nb-proc');nb.textContent=r.excCount;nb.style.display='';}
+  rOvHL();updTrend();
+}
+function rOvHL(){
+  const el=document.getElementById('ov-hist-list');
+  if(!G.hist.length){el.innerHTML='<div class="empty"><div class="ei">📋</div><div class="et">前往「采购智能」完成首次审核</div></div>';return;}
+  el.innerHTML=G.hist.slice(0,5).map((r,i)=>`<div style="display:flex;align-items:center;padding:10px 0;border-bottom:1px solid var(--g100)${i===Math.min(G.hist.length,5)-1?';border:none':''}"><div style="width:28px;height:28px;border-radius:8px;background:var(--g100);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:var(--mono);color:var(--g500);flex-shrink:0;margin-right:12px">#${G.hist.length-i}</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--g800)">${xe(r.pf||'未命名')}</div><div style="font-size:11px;font-family:var(--mono);color:var(--g400)">${r.time}</div></div><div style="display:flex;gap:12px"><span style="font-size:12px;font-weight:700;font-family:var(--mono);color:var(--green)">${r.matched}✓</span><span style="font-size:12px;font-weight:700;font-family:var(--mono);color:var(--red)">${r.excCount}↑</span><span style="font-size:12px;font-weight:700;font-family:var(--mono);color:var(--amber)">${r.manCount}?</span></div></div>`).join('');
+}
+// ══ reset ══
+function resetAudit(){
+  G.projWb=null;G.annWb=null;G.pf='';G.af='';G.mis=[];G.dec={};G.exc=[];G.man=[];G.ok=[];G.unitItems=[];G.ai=null;
+  ['proj','ann'].forEach(t=>{document.getElementById('dz-'+t).classList.remove('done','over');document.getElementById('fn-'+t).textContent='';document.querySelector('#dz-'+t+' input').value='';});
+  document.getElementById('alog').innerHTML='';document.getElementById('alog').classList.remove('show');
+  document.getElementById('scan-pw').classList.remove('show');setw('scan-pf',0);setw('run-pf',0);
+  document.getElementById('rlog').innerHTML='';
+// ══ KPI卡片点击跳转 ══
+function kpiClick(type){
+  // 更新卡片高亮状态
+  document.querySelectorAll('.kpi-click').forEach(el=>el.classList.remove('kpi-active'));
+  const map={ok:0,exc:1,man:2,unit:3};
+  const cards=document.querySelectorAll('.kpi-click');
+  if(cards[map[type]]) cards[map[type]].classList.add('kpi-active');
+
+  if(type==='ok'){
+    // 合规项：在超标tab显示，但筛选出合规的（即从exc tab显示空，另建合规视图）
+    showKpiDetail('ok');
+  } else if(type==='exc'){
+    rtab('exc');
+    document.querySelector('[data-rt="exc"]').scrollIntoView({behavior:'smooth',block:'nearest'});
+    showKpiDetail('exc');
+  } else if(type==='man'){
+    rtab('man');
+    document.querySelector('[data-rt="man"]').scrollIntoView({behavior:'smooth',block:'nearest'});
+    showKpiDetail('man');
+  } else if(type==='unit'){
+    // 单位不匹配是man的子集，切到人工审核并筛选
+    rtab('man');
+    document.querySelector('[data-rt="man"]').scrollIntoView({behavior:'smooth',block:'nearest'});
+    showKpiDetail('unit');
+  }
+}
+
+function showKpiDetail(type){
+  // 在结果区域顶部显示筛选提示bar
+  const existing = document.getElementById('rfbar');
+  if(existing) existing.remove();
+
+  const labels={
+    ok:{cls:'ok',icon:'✅',text:`合规项：共 ${G.exc.length===0&&G.man.length===0?'所有':''}${document.getElementById('r-ok').textContent} 项，价格均在年框范围内`},
+    exc:{cls:'exc',icon:'🔴',text:`超标项：共 ${document.getElementById('r-exc').textContent} 项超出年框，${document.getElementById('r-amt').textContent}`},
+    man:{cls:'man',icon:'🟡',text:`待人工审核：共 ${document.getElementById('r-man').textContent} 项，包含年框无此项、单位不匹配、年框单价为0等情况`},
+    unit:{cls:'unit',icon:'🔵',text:`单位不匹配：共 ${document.getElementById('r-unit').textContent} 项，已全部归入人工审核队列`},
+  };
+  const info=labels[type];
+
+  const bar=document.createElement('div');
+  bar.id='rfbar';bar.className=`rfbar ${info.cls}`;
+  bar.innerHTML=`<span>${info.icon}</span><span>${info.text}</span><span class="rfbar-close" onclick="clearKpiFilter()" title="清除筛选">×</span>`;
+
+  const resultDiv=document.getElementById('pp-result');
+  const kpiGrid=resultDiv.querySelector('.kpi-grid');
+  kpiGrid.insertAdjacentElement('afterend',bar);
+
+  // 对合规项特殊处理：切到超标tab，显示"合规项无超标"或直接渲染合规列表
+  if(type==='ok'){
+    rtab('exc');
+    renderOkItems();
+  }
+  // 对unit筛选：在man里只显示单位不匹配的
+  if(type==='unit'){
+    const unitItems=G.man.filter(i=>i.reason.includes('单位不匹配'));
+    rMan(unitItems);
+    document.getElementById('cnt-man').textContent=`筛选中：单位不匹配 共 ${unitItems.length} 条`;
+  }
+  // 滚动到bar
+  bar.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function renderOkItems(){
+  // 合规项没有单独存，从exc逻辑推导：所有已扫描且status=ok的项
+  // 用一个友好的空状态提示
+  const tbody=document.getElementById('tbody-exc');
+  const ok=parseInt(document.getElementById('r-ok').textContent)||0;
+  if(ok===0){
+    tbody.innerHTML=`<tr><td colspan="9"><div class="empty"><div class="ei">📋</div><div class="et">暂无合规项数据</div></div></td></tr>`;
+  } else {
+    tbody.innerHTML=`<tr><td colspan="9"><div style="text-align:center;padding:40px 20px">
+      <div style="font-size:36px;margin-bottom:12px">✅</div>
+      <div style="font-size:15px;font-weight:700;color:var(--green);margin-bottom:8px">共 ${ok} 项价格合规</div>
+      <div style="font-size:12px;color:var(--g400);line-height:1.8">这些项目的报价单价均 ≤ 年框单价，无需进一步处理。<br>合规项明细已包含在导出的 Excel「审核汇总」Sheet 中。</div>
+    </div></td></tr>`;
+  }
+}
+
+function clearKpiFilter(){
+  const bar=document.getElementById('rfbar');if(bar)bar.remove();
+  document.querySelectorAll('.kpi-click').forEach(el=>el.classList.remove('kpi-active'));
+  // 恢复原始数据展示
+  rExc(G.exc);rMan(G.man);
+}
+
+document.getElementById('btn-scan').disabled=true;goPhase('upload');
+}
+// ══ export ══
+function exportExcel(){
+  const wb=XLSX.utils.book_new();const now=new Date().toLocaleString('zh-CN');const et=G.exc.reduce((a,i)=>a+i.diff,0);
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['报价审核结果'],[''],['检查时间',now],['项目文件',G.pf],['年框文件',G.af],[''],['超标项数',G.exc.length],['超标总额',et],['待人工审核',G.man.length]]),'审核汇总');
+  if(G.exc.length){const rows=[['序号','Sheet','一级','二级','三级','四级','项目单价','年框单价','超标金额','超标比例','匹配单位','位置']];G.exc.forEach((it,i)=>rows.push([i+1,it.sheet,it.l1,it.l2,it.l3,it.l4,it.price,it.ap,it.diff,((it.diff/it.ap)*100).toFixed(1)+'%',it.mu,`第${it.row}行`]));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'超标项');}
+  if(G.man.length){const grp={};G.man.forEach(it=>{const l1=ss(it.rd[2])||'未分类';(grp[l1]||(grp[l1]=[])).push(it);});const H=['序号','Sheet','一级','二级','三级','四级','供应商描述','单价','数量1','单位1','数量2','单位2','总价','垫付费','服务费','备注','原因'];Object.entries(grp).forEach(([l1,items])=>{const rows=[H];items.forEach((it,i)=>{const r=it.rd;rows.push([i+1,it.sheet,ss(r[2]),ss(r[3]),ss(r[4]),ss(r[5]),ss(r[8]),sf(r[9]),r[10],ss(r[11]),r[12],ss(r[13]),sf(r[14]),ss(r[15]),ss(r[16]),ss(r[17]),it.reason]);});XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),`人工-${l1}`.slice(0,31));});}
+  const ts=new Date().toISOString().slice(0,16).replace(/[-T:]/g,'').replace(/(\d{8})(\d{4})/,'$1_$2');XLSX.writeFile(wb,`审核结果_${ts}.xlsx`);
+}
+// ══ charts ══
+let tc=null,ec=null,fc=null;
+function updTrend(){
+  const data=G.hist.slice().reverse().slice(-10);const labels=data.map((_,i)=>`#${i+1}`);
+  const rates=data.map(r=>r.matched+r.excCount>0?parseFloat(((r.matched/(r.matched+r.excCount))*100).toFixed(1)):0);
+  document.getElementById('c-trend-empty').style.display='none';document.getElementById('c-trend-wrap').style.display='block';
+  document.getElementById('c-exc-empty').style.display='none';document.getElementById('c-exc-wrap').style.display='block';
+  if(tc){tc.data.labels=labels;tc.data.datasets[0].data=rates;tc.update();}
+  else{tc=new Chart(document.getElementById('c-trend'),{type:'line',data:{labels,datasets:[{label:'合规率',data:rates,borderColor:'#2563eb',backgroundColor:'#2563eb15',fill:true,tension:.4,pointRadius:4,pointBackgroundColor:'#2563eb'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#94a3b8',font:{size:11}},grid:{color:'#f1f5f9'}},y:{min:0,max:100,ticks:{color:'#94a3b8',font:{size:11},callback:v=>v+'%'},grid:{color:'#f1f5f9'}}}}});}
+  const ea=data.map(r=>r.excTotal);
+  if(ec){ec.data.labels=labels;ec.data.datasets[0].data=ea;ec.update();}
+  else{ec=new Chart(document.getElementById('c-exc-hist'),{type:'bar',data:{labels,datasets:[{label:'超标金额',data:ea,backgroundColor:'#fecaca',borderColor:'#dc2626',borderWidth:1.5,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#94a3b8',font:{size:11}},grid:{display:false}},y:{ticks:{color:'#94a3b8',font:{size:11},callback:v=>v>=10000?`¥${(v/10000).toFixed(0)}万`:`¥${v}`},grid:{color:'#f1f5f9'}}}}});}
+}
+function logSim(){
+  const m=document.getElementById('lmode').value,d=parseInt(document.getElementById('ldist').value),w=parseInt(document.getElementById('lweight').value);
+  document.getElementById('ld-v').textContent=d;document.getElementById('lw-v').textContent=w;
+  const r={空运:{c:8.5,t:.0006},海运:{c:.8,t:.003},铁路:{c:1.4,t:.002},公路:{c:2.2,t:.0015}}[m]||{c:1,t:.002};
+  document.getElementById('lcost').textContent='¥'+Math.round(d*w*r.c).toLocaleString();
+  document.getElementById('ldays').textContent=Math.max(1,Math.round(d*r.t*10))+'天';
+}
+function invSim(){
+  const d=parseInt(document.getElementById('idem').value),v=parseInt(document.getElementById('ivar').value),lt=parseInt(document.getElementById('ilt').value),s=parseInt(document.getElementById('isaf').value);
+  document.getElementById('id-v').textContent=d;document.getElementById('iv-v').textContent=v+'%';document.getElementById('il-v').textContent=lt;document.getElementById('is-v').textContent=s+'%';
+  const daily=d/30,ss2=Math.round(daily*lt*(v/100)*2),rop=Math.round(daily*lt+ss2),eoq=Math.round(Math.sqrt(2*d*50/.2));
+  document.getElementById('i-rop').textContent=rop;document.getElementById('i-ss').textContent=ss2;document.getElementById('i-eoq').textContent=eoq;
+  const mo=['7月','8月','9月','10月','11月','12月'],fd=mo.map((_,i)=>Math.round(d*(1+(Math.random()*.8-.4)*v/100)*(1+i*.03)));
+  if(fc){fc.data.datasets[0].data=fd;fc.update();}
+  else{fc=new Chart(document.getElementById('c-inv'),{type:'line',data:{labels:mo,datasets:[{label:'预测',data:fd,borderColor:'#2563eb',backgroundColor:'#2563eb12',fill:true,tension:.4,pointRadius:4,pointBackgroundColor:'#2563eb'},{label:'安全线',data:fd.map(v=>Math.round(v*.8)),borderColor:'#d9770670',borderDash:[4,4],fill:false,tension:.4,pointRadius:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#94a3b8',font:{size:11}},grid:{color:'#f1f5f9'}},y:{ticks:{color:'#94a3b8',font:{size:11}},grid:{color:'#f1f5f9'}}}}});}
+}
+window.addEventListener('load',()=>{
+  new Chart(document.getElementById('c-log'),{type:'bar',data:{labels:['华北','华东','华南','APAC','欧美'],datasets:[{label:'实际',data:[3.2,4.1,3.8,7.4,6.2],backgroundColor:'#bfdbfe',borderColor:'#2563eb',borderWidth:1.5,borderRadius:6},{label:'目标',data:[3.5,4.0,4.0,5.0,6.0],backgroundColor:'#a7f3d0',borderColor:'#059669',borderWidth:1.5,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#94a3b8',font:{size:11}},grid:{display:false}},y:{ticks:{color:'#94a3b8',font:{size:11},callback:v=>v+'天'},grid:{color:'#f1f5f9'}}}}});
+  new Chart(document.getElementById('c-dec'),{type:'bar',data:{labels:['供应商重谈','运输方式切换','库存优化','合同管理','仓储整合'],datasets:[{data:[140,106,52,48,38],backgroundColor:['#bfdbfe','#a7f3d0','#e9d5ff','#fde68a','#fecaca'],borderColor:['#2563eb','#059669','#7c3aed','#d97706','#dc2626'],borderWidth:1.5,borderRadius:6}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#94a3b8',font:{size:10},callback:v=>'¥'+v+'K'},grid:{color:'#f1f5f9'}},y:{ticks:{color:'#64748b',font:{size:11}},grid:{display:false}}}}});
+  document.getElementById('dec-ins').innerHTML=[{i:'01',c:'var(--red)',bg:'var(--red-l)',tag:'紧急 · 采购',t:'立即重谈：供应商 Delta 合同已过期',s:'绩效61.8%，低于SLA阈值75%。重谈或更换预计节省¥48K/年。'},{i:'02',c:'var(--red)',bg:'var(--red-l)',tag:'紧急 · 库存',t:'产品D今日必须补货，库存仅剩8天',s:'需求无放缓，前置期7天，今天下单才能避免断货。'},{i:'03',c:'var(--amber)',bg:'var(--amber-l)',tag:'高优 · 物流',t:'LATAM+APAC仓储合并可行性分析',s:'WH-LATAM-01利用率仅55%，整合可节省¥38K/年固定成本。'},{i:'04',c:'var(--amber)',bg:'var(--amber-l)',tag:'高优 · 采购',t:'3家供应商持续超标：SKU-44/12/89',s:'报价高于市场基准10~18%，专项谈判机会约¥92K。'},{i:'05',c:'var(--blue)',bg:'var(--blue-l)',tag:'中优 · 物流',t:'产品A切换海运可节省¥106K/年',s:'当前空运，为非易腐品，切换海运增加4天运期但年省10万+。'}].map(x=>`<div class="icard"><div class="iidx" style="color:${x.c}">${x.i}</div><div><div class="ititle">${x.t}</div><div class="isub">${x.s}</div><span class="itag" style="background:${x.bg};color:${x.c}">${x.tag}</span></div></div>`).join('');
+  logSim();invSim();
+});
+document.getElementById('btn-scan').disabled=true;document.getElementById('btn-run').disabled=true;
+</script>
+
+<script>
+var _lang = 'zh';
+function switchLang(lang) {
+  _lang = lang;
+  // 更新按钮样式
+  var zh = document.getElementById('lb-zh');
+  var en = document.getElementById('lb-en');
+  if (lang === 'zh') {
+    zh.style.background='#fff'; zh.style.color='#2563eb'; zh.style.boxShadow='0 1px 3px rgba(0,0,0,.1)';
+    en.style.background='transparent'; en.style.color='#94a3b8'; en.style.boxShadow='none';
+  } else {
+    en.style.background='#fff'; en.style.color='#2563eb'; en.style.boxShadow='0 1px 3px rgba(0,0,0,.1)';
+    zh.style.background='transparent'; zh.style.color='#94a3b8'; zh.style.boxShadow='none';
+  }
+  // 遍历所有带data-zh/data-en的元素
+  var els = document.querySelectorAll('[data-zh]');
+  for (var i = 0; i < els.length; i++) {
+    var el = els[i];
+    var txt = el.getAttribute('data-' + lang);
+    if (txt) el.textContent = txt;
+  }
+  // 处理innerHTML的元素（notice）
+  var notice = document.getElementById('_notice');
+  if (notice) {
+    notice.innerHTML = lang === 'zh'
+      ? '需上传两个文件：<strong>项目报价文件</strong>（供应商报价）和<strong>年框价格文件</strong>（年框协议价）。系统按 Sheet 名称自动匹配，全部本地计算，文件不会上传到任何服务器。'
+      : 'Upload two files: <strong>Project Quote File</strong> (supplier quotes) and <strong>Annual Framework File</strong> (framework prices). All processing is done locally — no files uploaded to any server.';
+  }
+  // 搜索框placeholder
+  var phs = document.querySelectorAll('.search');
+  for (var j = 0; j < phs.length; j++) {
+    phs[j].placeholder = lang === 'zh' ? '搜索报价项…' : 'Search items…';
+  }
+  // 侧栏nav文字（带svg的特殊处理）
+  var navMap = [
+    ['overview', '总览仪表盘', 'Dashboard'],
+    ['procurement', '采购智能', 'Procurement'],
+    ['logistics', '物流网络', 'Logistics'],
+    ['inventory', '库存规划', 'Inventory'],
+    ['decisions', '决策优化', 'Decisions']
+  ];
+  var nis = document.querySelectorAll('.ni');
+  for (var k = 0; k < nis.length && k < navMap.length; k++) {
+    var ni = nis[k];
+    var badge = ni.querySelector('.nbadge');
+    var svg = ni.querySelector('svg');
+    var txt2 = lang === 'zh' ? navMap[k][1] : navMap[k][2];
+    // 清空，重建
+    while (ni.lastChild && ni.lastChild !== svg && ni.lastChild !== badge) {
+      ni.removeChild(ni.lastChild);
+    }
+    ni.innerHTML = '';
+    if (svg) ni.appendChild(svg);
+    ni.appendChild(document.createTextNode(' ' + txt2));
+    if (badge) ni.appendChild(badge);
+  }
+  // 结果tabs文字
+  var rtabMap = {ok:['比对合规','Compliant'], exc:['超出年框','Over Framework'], man:['待人工审核','Manual Review'], unit:['单位不匹配','Unit Mismatch']};
+  for (var key in rtabMap) {
+    var tab = document.querySelector('[data-rt="'+key+'"]');
+    if (!tab) continue;
+    var badge2 = tab.querySelector('.tbadge');
+    tab.innerHTML = '';
+    tab.appendChild(document.createTextNode((lang==='zh'?rtabMap[key][0]:rtabMap[key][1]) + ' '));
+    if (badge2) tab.appendChild(badge2);
+  }
+  // 采购tabs
+  var ptabMap = {audit:['报价审核','Quote Audit'], history:['历史记录','History'], contracts:['合同状态','Contracts']};
+  for (var key2 in ptabMap) {
+    var tab2 = document.querySelector('[data-pt="'+key2+'"]');
+    if (!tab2) continue;
+    var badge3 = tab2.querySelector('.tbadge');
+    tab2.innerHTML = '';
+    tab2.appendChild(document.createTextNode((lang==='zh'?ptabMap[key2][0]:ptabMap[key2][1]) + ' '));
+    if (badge3) tab2.appendChild(badge3);
+  }
+  // 表头
+  var headMap = {
+    'thead-ok':   [['#','Sheet','报价项','项目单价','年框单价','匹配单位','位置'],
+                   ['#','Sheet','Item','Quote Price','Framework Price','Unit','Row']],
+    'thead-exc':  [['#','Sheet','报价项','项目单价','年框单价','超标金额','超标比例','匹配单位','位置'],
+                   ['#','Sheet','Item','Quote Price','Framework Price','Over Amt','Over Rate','Unit','Row']],
+    'thead-man':  [['#','Sheet','一级','二级','三级','四级','单价','数量1','单位1','数量2','单位2','总价','垫付费','服务费','供应商描述','原因'],
+                   ['#','Sheet','L1','L2','L3','L4','Price','Qty1','Unit1','Qty2','Unit2','Total','Prepaid','Svc Fee','Supplier','Reason']],
+    'thead-unit': [['#','Sheet','一级','二级','三级','四级','单价','单位1','单位2','原因'],
+                   ['#','Sheet','L1','L2','L3','L4','Price','Unit1','Unit2','Reason']],
+    'thead-ctr':  [['合同编号','供应商','合同金额','签署日期','到期日期','剩余时间','状态'],
+                   ['Contract ID','Supplier','Amount','Start','Expiry','Remaining','Status']]
+  };
+  for (var hid in headMap) {
+    var thead = document.getElementById(hid);
+    if (!thead) continue;
+    var ths = thead.querySelectorAll('th');
+    var arr = headMap[hid][lang==='zh'?0:1];
+    for (var m = 0; m < ths.length && m < arr.length; m++) ths[m].textContent = arr[m];
+  }
+  // 物流select选项
+  var lmode = document.getElementById('lmode');
+  if (lmode) {
+    var opts = lang==='zh' ? ['空运','海运','铁路','公路'] : ['Air','Sea','Rail','Road'];
+    var sopts = lmode.querySelectorAll('option');
+    for (var n=0;n<sopts.length&&n<opts.length;n++) sopts[n].textContent = opts[n];
+  }
+  // 预估费用/天数标签
+  var lcost = document.getElementById('_lcost_lbl');
+  var ldays = document.getElementById('_ldays_lbl');
+  if(lcost) lcost.textContent = lang==='zh'?'预估费用':'Est. Cost';
+  if(ldays) ldays.textContent = lang==='zh'?'预估天数':'Est. Days';
+}
+</script>
+</body>
+</html>
