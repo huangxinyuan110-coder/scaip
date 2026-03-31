@@ -217,13 +217,28 @@ td{padding:10px 14px;vertical-align:middle}
 .rfbar.man{background:var(--amber-l);border-color:#fde68a;color:var(--amber)}
 .rfbar.unit{background:var(--blue-l);border-color:var(--blue-m);color:var(--blue)}
 .rfbar-close{margin-left:auto;cursor:pointer;font-size:18px;line-height:1;opacity:.5;transition:.15s;font-weight:400;}.rfbar-close:hover{opacity:1}
+
+/* ── Rule Engine v3 additions ── */
+.rtag{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;font-family:var(--mono);white-space:nowrap}
+.rtag-unit{background:var(--blue-l);color:var(--blue)}
+.rtag-price{background:var(--red-l);color:var(--red)}
+.rtag-rule{background:#f3e8ff;color:#7c3aed}
+.rtag-nf{background:var(--g100);color:var(--g500)}
+.rtag-zero{background:var(--amber-l);color:var(--amber)}
+.sheet-tabs{display:flex;gap:3px;margin-bottom:14px;flex-wrap:wrap}
+.sheet-tab{padding:5px 14px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;background:var(--g100);color:var(--g500);border:1.5px solid transparent;transition:all .15s;display:flex;align-items:center;gap:5px}
+.sheet-tab:hover{background:var(--g200);color:var(--g700)}
+.sheet-tab.active{background:var(--white);color:var(--black);border-color:var(--g300);box-shadow:var(--ss)}
+.sheet-tab-cnt{font-family:var(--mono);font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:var(--amber-l);color:var(--amber)}
+.rule-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;font-family:var(--mono);padding:2px 9px;border-radius:8px;background:#f3e8ff;color:#7c3aed;border:1px solid #e9d5ff}
+.rule-hit-row{background:#faf5ff!important}
 </style>
 </head>
 <body>
 <div class="app">
 <!-- TOPBAR -->
 <div class="topbar">
-  <div class="brand"><div class="brand-chip">SCAIP</div><span class="brand-name" data-zh="供应链智能平台" data-en="Supply Chain Platform">供应链智能平台</span><span class="brand-ver">v2.0</span></div>
+  <div class="brand"><div class="brand-chip">SCAIP</div><span class="brand-name" data-zh="供应链智能平台" data-en="Supply Chain Platform">供应链智能平台</span><span class="brand-ver">v3.0</span></div>
   <div class="sys-status"><div class="sdot"></div><span data-zh="系统运行正常" data-en="All Systems Normal">系统运行正常</span></div>
   <div style="display:flex;align-items:center;gap:3px;background:#f1f5f9;border-radius:10px;padding:3px;margin-right:8px">
   <button id="lb-zh" onclick="switchLang('zh')" style="background:#fff;border:none;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;color:#2563eb;font-family:var(--sans);box-shadow:0 1px 3px rgba(0,0,0,.1)">简中</button>
@@ -383,7 +398,7 @@ td{padding:10px 14px;vertical-align:middle}
     <!-- result -->
     <div id="pp-result" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
-        <div><div style="font-size:18px;font-weight:800;color:var(--black);display:flex;align-items:center;gap:10px"><span data-zh="审核完成" data-en="Audit Complete">审核完成</span> <span style="background:var(--green-l);color:var(--green);font-size:11px;font-weight:700;padding:3px 12px;border-radius:20px;font-family:var(--mono)">DONE</span></div><div style="font-size:12px;color:var(--g500);margin-top:3px" id="rfi">—</div></div>
+        <div><div style="font-size:18px;font-weight:800;color:var(--black);display:flex;align-items:center;gap:10px"><span data-zh="审核完成" data-en="Audit Complete">审核完成</span> <span style="background:var(--green-l);color:var(--green);font-size:11px;font-weight:700;padding:3px 12px;border-radius:20px;font-family:var(--mono)">DONE</span> <span class="rule-badge">⚡ 规则引擎 v3</span></div><div style="font-size:12px;color:var(--g500);margin-top:3px" id="rfi">—</div></div>
         <div class="btn-row"><button class="btn btn-green btn-sm" onclick="exportExcel()"><span data-zh="↓ 导出 Excel" data-en="↓ Export Excel">↓ 导出 Excel</span></button><button class="btn btn-ghost btn-sm" onclick="resetAudit()"><span data-zh="↺ 重新审核" data-en="↺ Re-audit">↺ 重新审核</span></button></div>
       </div>
       <div class="kpi-grid" style="margin-bottom:20px">
@@ -408,7 +423,11 @@ td{padding:10px 14px;vertical-align:middle}
       </div>
       <div id="rp-man" style="display:none">
         <div class="tbar"><input class="search" placeholder="搜索报价项…" oninput="filt('man',this.value)"><span class="rc" id="cnt-man"></span></div>
-        <div class="twrap"><div class="tscroll"><table><thead id="thead-man"><tr><th>#</th><th>Sheet</th><th>一级</th><th>二级</th><th>三级</th><th>四级</th><th class="td-r">单价</th><th>数量1</th><th>单位1</th><th>数量2</th><th>单位2</th><th class="td-r">总价</th><th>垫付费</th><th>服务费</th><th>供应商描述</th><th>原因</th></tr></thead><tbody id="tbody-man"></tbody></table></div></div>
+        <!-- Sheet切换 Tab Bar (v3新增) -->
+        <div class="sheet-tabs" id="man-sheet-tabs"></div>
+        <!-- 原因分类标签 (v3新增) -->
+        <div id="man-reason-tags" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"></div>
+        <div class="twrap"><div class="tscroll"><table><thead id="thead-man"><tr><th>#</th><th>Sheet</th><th>一级</th><th>二级</th><th>三级</th><th>四级</th><th class="td-r">单价</th><th>数量1</th><th>单位1</th><th>数量2</th><th>单位2</th><th class="td-r">总价</th><th>垫付费</th><th>服务费</th><th>供应商描述</th><th>原因分类</th><th>原因详情</th></tr></thead><tbody id="tbody-man"></tbody></table></div></div>
       </div>
       <div id="rp-unit" style="display:none">
         <div class="tbar"><input class="search" placeholder="搜索报价项…" oninput="filt('unit',this.value)"><span class="rc" id="cnt-unit"></span></div>
@@ -610,6 +629,222 @@ const PH=new Set(['其他','其他-其他','']);
 const DS=3,PI=9;
 const UA={台:'个',件:'个',只:'个',幅:'张',块:'个',场:'次',趟:'次'};
 const G={projWb:null,annWb:null,pf:'',af:'',mis:[],dec:{},ea:new Set(),exc:[],man:[],ok:[],unitItems:[],ai:null,hist:[]};
+
+// ══════════════════════════════════════════════════
+// ▼▼▼  RULE ENGINE v3  ▼▼▼
+// ══════════════════════════════════════════════════
+
+/**
+ * 将原始 row 数组标准化为业务对象
+ * r[2]=l1, r[3]=l2, r[4]=l3, r[5]=l4, r[8]=desc
+ * r[9]=price, r[10]=qty1, r[11]=unit1, r[12]=qty2, r[13]=unit2
+ * r[14]=total, r[15]=advanceFee, r[16]=serviceFee
+ */
+function normalizeRow(r, sheetName) {
+  return {
+    l1: ss(r[2]),
+    l2: ss(r[3]),
+    l3: ss(r[4]),
+    l4: ss(r[5]),
+    desc: ss(r[8]),
+    price: sf(r[PI]),
+    qty1: r[10],
+    unit: ss(r[11]),
+    unit2: ss(r[13]),
+    total: sf(r[14]),
+    advanceFee: ss(r[15]),
+    serviceFee: ss(r[16]),
+    sheetName: sheetName,
+    _raw: r  // 保留原始行供后续兼容
+  };
+}
+
+/**
+ * 辅助函数：判断是否为差旅/接待Sheet
+ */
+function isTravelSheet(sheetName) {
+  return sheetName.includes('差旅') || sheetName.includes('接待');
+}
+
+/**
+ * 辅助函数：检查字符串是否包含关键词（任一）
+ */
+function containsAny(str, keywords) {
+  return keywords.some(kw => str.includes(kw));
+}
+
+/**
+ * 辅助函数：将“垫付费/服务费”字段规范化为布尔值
+ * 说明：Excel 里常见值可能为 是/否、Y/N、TRUE/FALSE、1/0、空白
+ * 只有明确表示“是/有/收取”的值才视为 true；“否/无/空”视为 false。
+ */
+function feeEnabled(val) {
+  const raw = String(val == null ? '' : val).trim().toLowerCase();
+  if (!raw) return false;
+  if (['是','y','yes','true','1','收取','有'].includes(raw)) return true;
+  if (['否','n','no','false','0','无','-','/','none'].includes(raw)) return false;
+  // 兜底：未知非空值不直接判定收费，避免把“否”这类文本误判成 true
+  return false;
+}
+
+/**
+ * 辅助函数：判断是否同时收取两项费用
+ */
+function hasBothFees(item) {
+  const hasAf = feeEnabled(item.advanceFee);
+  const hasSf = feeEnabled(item.serviceFee);
+  return hasAf && hasSf;
+}
+
+function hasAnyFee(item) {
+  const hasAf = feeEnabled(item.advanceFee);
+  const hasSf = feeEnabled(item.serviceFee);
+  return hasAf || hasSf;
+}
+
+/**
+ * 规则引擎：规则定义表（按 priority 升序执行，越小越优先）
+ * 每条规则返回 { hit: bool, reason: string, category: 'unit'|'price'|'rule' }
+ * hit=true → 触发此规则，跳出后续规则
+ * passthrough=true → 触发规则但直接判定合规，不进人工审核
+ */
+const AUDIT_RULES = [
+
+  // ────────────────────────────────────────────────
+  // 规则1: 高铁/机票例外规则（最高优先级 = 10）
+  // 条件：差旅/接待Sheet + 三级含高铁/动车/机票 + 含二等座/经济舱 + 四级含"第三方人员"
+  // 逻辑：不比价，只检查垫付费+服务费不能双收
+  // ────────────────────────────────────────────────
+  {
+    name: '高铁/机票例外',
+    priority: 10,
+    check(item) {
+      if (!isTravelSheet(item.sheetName)) return { hit: false };
+      const l3 = item.l3;
+      const l4 = item.l4;
+      const hasTrain = containsAny(l3, ['高铁','动车','机票']);
+      const hasClass = containsAny(l3, ['二等座','经济舱']);
+      const isThirdParty = l4.includes('第三方人员');
+      if (!(hasTrain && hasClass && isThirdParty)) return { hit: false };
+
+      if (hasBothFees(item)) {
+        return {
+          hit: true,
+          reason: '高铁/机票-第三方人员：垫付费与服务费不可同时收取，请人工确认',
+          category: 'rule'
+        };
+      }
+      // 只收一项或都不收 → 合规，passthrough
+      return {
+        hit: true,
+        passthrough: true,
+        reason: '高铁/机票例外-合规（第三方人员，费用规范）',
+        category: 'rule'
+      };
+    }
+  },
+
+  // ────────────────────────────────────────────────
+  // 规则2: 活动公司人员规则（priority = 20）
+  // 条件：差旅/接待Sheet + 四级含"活动公司人员"
+  // 规则：禁止收取垫付费或服务费
+  // ────────────────────────────────────────────────
+  {
+    name: '活动公司人员',
+    priority: 20,
+    check(item) {
+      if (!isTravelSheet(item.sheetName)) return { hit: false };
+      if (!item.l4.includes('活动公司人员')) return { hit: false };
+
+      if (hasAnyFee(item)) {
+        return {
+          hit: true,
+          reason: '活动公司人员：禁止收取垫付费或服务费（规则违规）',
+          category: 'rule'
+        };
+      }
+      return { hit: false }; // 未收费，继续执行后续规则
+    }
+  },
+
+  // ────────────────────────────────────────────────
+  // 规则3: 第三方人员费用规则（priority = 30）
+  // 条件：差旅/接待Sheet + 四级含"第三方人员"
+  // 规则：可收一项，不可同时收两项
+  // ────────────────────────────────────────────────
+  {
+    name: '第三方人员双收费',
+    priority: 30,
+    check(item) {
+      if (!isTravelSheet(item.sheetName)) return { hit: false };
+      if (!item.l4.includes('第三方人员')) return { hit: false };
+
+      if (hasBothFees(item)) {
+        return {
+          hit: true,
+          reason: '第三方人员：垫付费与服务费不可同时收取（规则违规）',
+          category: 'rule'
+        };
+      }
+      return { hit: false };
+    }
+  },
+
+  // ────────────────────────────────────────────────
+  // 规则4: 差旅费用价格标准（priority = 40）
+  // 住宿>400 / 餐补>60 / 交通>50 → 异常
+  // ────────────────────────────────────────────────
+  {
+    name: '差旅价格标准',
+    priority: 40,
+    check(item) {
+      if (!isTravelSheet(item.sheetName)) return { hit: false };
+      const p = item.price;
+      if (p == null || p <= 0) return { hit: false };
+      const l3 = item.l3 + item.l2 + item.l1;
+
+      if (containsAny(l3, ['住宿','酒店','宾馆']) && p > 400) {
+        return { hit: true, reason: `住宿单价¥${p}，超出标准¥400`, category: 'price' };
+      }
+      if (containsAny(l3, ['餐补','餐费','用餐']) && p > 60) {
+        return { hit: true, reason: `餐补单价¥${p}，超出标准¥60`, category: 'price' };
+      }
+      if (containsAny(l3, ['交通','出租','打车','地铁','公交']) && p > 50) {
+        return { hit: true, reason: `交通单价¥${p}，超出标准¥50`, category: 'price' };
+      }
+      return { hit: false };
+    }
+  }
+
+];
+
+/**
+ * 执行规则引擎
+ * @param {object} item - normalizeRow 输出的标准化对象
+ * @returns {{ triggered: bool, passthrough: bool, rule: string, reason: string, category: string }|null}
+ */
+function runRuleEngine(item) {
+  // 按 priority 升序排序（防止乱序）
+  const sorted = [...AUDIT_RULES].sort((a, b) => a.priority - b.priority);
+  for (const rule of sorted) {
+    const result = rule.check(item);
+    if (result.hit) {
+      return {
+        triggered: true,
+        passthrough: result.passthrough || false,
+        rule: rule.name,
+        reason: result.reason,
+        category: result.category || 'rule'
+      };
+    }
+  }
+  return { triggered: false };
+}
+
+// ══════════════════════════════════════════════════
+// ▲▲▲  END RULE ENGINE  ▲▲▲
+// ══════════════════════════════════════════════════
+
 // ══ tools ══
 const sf=v=>{if(v==null||v==='')return null;const n=parseFloat(v);return isNaN(n)?null:n;};
 const ss=v=>v!=null?String(v).trim():'';
@@ -722,22 +957,55 @@ async function runCheck(){
   goPhase('running');await slp(80);await doCheck();
 }
 async function doCheck(){
-  const ai=G.ai||bai(G.annWb);G.exc=[];G.man=[];let matched=0,num=0;
+  const ai=G.ai||bai(G.annWb);G.exc=[];G.man=[];G.ok=[];let matched=0,num=0;
   const rl=document.getElementById('rlog');const sheets=G.projWb.SheetNames.filter(n=>!SKIP.has(n));
   for(let si=0;si<sheets.length;si++){
     const sn=sheets[si];setw('run-pf',Math.round(10+80*si/sheets.length));
     rl.innerHTML+=`<span style="color:#475569">→ </span><span style="color:#94a3b8">检查：</span><span style="color:#e2e8f0">${xe(sn)}</span><br>`;rl.scrollTop=rl.scrollHeight;await slp(8);
-    if(!ai[sn]){const rows=s2r(G.projWb.Sheets[sn]);const st=fds(rows);for(let i=st;i<rows.length;i++){const r=rows[i],p=sf(r[PI]);if(!p||p<=0)continue;G.man.push({sheet:sn,row:i+1,rd:r,reason:'年框无对应Sheet'});}continue;}
+
+    if(!ai[sn]){
+      const rows=s2r(G.projWb.Sheets[sn]);const st=fds(rows);
+      for(let i=st;i<rows.length;i++){
+        const r=rows[i],p=sf(r[PI]);if(!p||p<=0)continue;
+        const item=normalizeRow(r,sn);
+        // ── 规则引擎优先检查 ──
+        const re=runRuleEngine(item);
+        if(re.triggered){
+          if(re.passthrough){G.ok.push({sheet:sn,row:i+1,l1:item.l1,l2:item.l2,l3:item.l3,l4:item.l4,price:item.price,ap:0,mu:'规则豁免',ruleHit:re.rule});}
+          else{G.man.push({sheet:sn,row:i+1,rd:r,item:item,reason:re.reason,reasonCat:re.category,ruleHit:re.rule});}
+          continue;
+        }
+        G.man.push({sheet:sn,row:i+1,rd:r,item:item,reason:'年框无对应Sheet',reasonCat:'nf'});
+      }
+      continue;
+    }
+
     const rows=s2r(G.projWb.Sheets[sn]);const st=fds(rows);
     for(let ri=st;ri<rows.length;ri++){
-      const r=rows[ri],p=sf(r[PI]);if(!p||p<=0)continue;const nm=gin(r);if(!nm)continue;
-      const pu1=ss(r[11]),pu2=ss(r[13]);
-      if(!ai[sn][nm]){G.man.push({sheet:sn,row:ri+1,rd:r,reason:'年框无此报价项'});continue;}
+      const r=rows[ri],p=sf(r[PI]);if(!p||p<=0)continue;
+      const nm=gin(r);if(!nm)continue;
+      const item=normalizeRow(r,sn);
+      const pu1=item.unit,pu2=item.unit2;
+
+      // ── 规则引擎：优先于价格比对 ──
+      const re=runRuleEngine(item);
+      if(re.triggered){
+        if(re.passthrough){
+          matched++;
+          G.ok.push({sheet:sn,row:ri+1,l1:item.l1,l2:item.l2,l3:item.l3,l4:item.l4,price:item.price,ap:0,mu:'规则豁免',ruleHit:re.rule});
+        } else {
+          G.man.push({sheet:sn,row:ri+1,rd:r,item:item,reason:re.reason,reasonCat:re.category,ruleHit:re.rule});
+        }
+        continue;
+      }
+
+      // ── 常规年框比对逻辑（原有逻辑，完全保留）──
+      if(!ai[sn][nm]){G.man.push({sheet:sn,row:ri+1,rd:r,item:item,reason:'年框无此报价项',reasonCat:'nf'});continue;}
       const res=mu(p,pu1,pu2,ai[sn][nm],G.ea);
-      if(res.status==='no_unit_match'){G.man.push({sheet:sn,row:ri+1,rd:r,reason:`单位不匹配：项目(${pu1}${pu2?'/'+pu2:''})，年框${res.ad}`});num++;}
-      else if(res.status==='annual_zero'){G.man.push({sheet:sn,row:ri+1,rd:r,reason:'年框单价为0，需人工确认'});}
-      else if(res.status==='exceeded'){matched++;G.exc.push({sheet:sn,row:ri+1,l1:ss(r[2]),l2:ss(r[3]),l3:ss(r[4]),l4:ss(r[5]),price:p,ap:res.ap,mu:res.mu,diff:p-res.ap});}
-      else{matched++;G.ok.push({sheet:sn,row:ri+1,l1:ss(r[2]),l2:ss(r[3]),l3:ss(r[4]),l4:ss(r[5]),price:p,ap:res.ap,mu:res.mu});}
+      if(res.status==='no_unit_match'){G.man.push({sheet:sn,row:ri+1,rd:r,item:item,reason:`单位不匹配：项目(${pu1}${pu2?'/'+pu2:''})，年框${res.ad}`,reasonCat:'unit'});num++;}
+      else if(res.status==='annual_zero'){G.man.push({sheet:sn,row:ri+1,rd:r,item:item,reason:'年框单价为0，需人工确认',reasonCat:'zero'});}
+      else if(res.status==='exceeded'){matched++;G.exc.push({sheet:sn,row:ri+1,l1:item.l1,l2:item.l2,l3:item.l3,l4:item.l4,price:p,ap:res.ap,mu:res.mu,diff:p-res.ap});}
+      else{matched++;G.ok.push({sheet:sn,row:ri+1,l1:item.l1,l2:item.l2,l3:item.l3,l4:item.l4,price:p,ap:res.ap,mu:res.mu});}
     }
   }
   setw('run-pf',100);await slp(300);
@@ -771,10 +1039,99 @@ function rExc(items){
   if(!items.length){tb.innerHTML=`<tr><td colspan="9"><div class="empty"><div class="ei">✅</div><div class="et">所有报价项均在年框范围内</div></div></td></tr>`;return;}
   tb.innerHTML=items.map((it,i)=>{const ratio=it.diff/it.ap;const bc=ratio>.5?'badge-err':ratio>.2?'badge-warn':'badge-gray';return`<tr><td class="td-dim">${i+1}</td><td class="td-dim">${xe(it.sheet)}</td><td class="td-name">${xe(it.l4||it.l3||it.l2||it.l1)}</td><td class="td-r td-m">¥${fm(it.price)}</td><td class="td-r ok-v">¥${fm(it.ap)}</td><td class="td-r exc-v">¥${fm(it.diff)}</td><td class="td-r"><span class="badge ${bc}">+${(ratio*100).toFixed(1)}%</span></td><td class="td-dim">${xe(it.mu)}</td><td class="td-dim">第${it.row}行</td></tr>`;}).join('');
 }
+function _buildManualReasonTags(items){
+  const reasonTagsEl=document.getElementById('man-reason-tags');
+  if(!reasonTagsEl) return;
+  const catCounts={unit:0,price:0,rule:0,nf:0,zero:0};
+  items.forEach(it=>{
+    const cat=it.reasonCat||'nf';
+    if(catCounts[cat]!==undefined) catCounts[cat]++;
+    else catCounts['nf']++;
+  });
+  const catMap={
+    unit:{cls:'rtag-unit',label:'单位问题'},
+    price:{cls:'rtag-price',label:'价格问题'},
+    rule:{cls:'rtag-rule',label:'规则违规'},
+    nf:{cls:'rtag-nf',label:'年框缺项'},
+    zero:{cls:'rtag-zero',label:'年框零价'}
+  };
+  reasonTagsEl.innerHTML=Object.entries(catCounts)
+    .filter(([,cnt])=>cnt>0)
+    .map(([cat,cnt])=>`<span class="rtag ${catMap[cat]?.cls||'rtag-nf'}">${catMap[cat]?.label||cat} · ${cnt}</span>`)
+    .join('') || '';
+}
+
+function _manualViewItems(){
+  if(!G._manGroups) return G.man||[];
+  const key=G._activeManSheetKey||'all';
+  return G._manGroups[key]||[];
+}
+
 function rMan(items){
-  const tb=document.getElementById('tbody-man');document.getElementById('cnt-man').textContent=items.length?`共 ${items.length} 条`:'';
-  if(!items.length){tb.innerHTML=`<tr><td colspan="16"><div class="empty"><div class="ei">✅</div><div class="et">无需人工审核的项目</div></div></td></tr>`;return;}
-  tb.innerHTML=items.map((it,i)=>{const r=it.rd;const iu=it.reason.includes('单位不匹配');const inf=it.reason.includes('无此报价项');const iz=it.reason.includes('单价为0');const cls=iu?'rt-unit':inf?'rt-nf':iz?'rt-zero':'rt-sh';return`<tr><td class="td-dim">${i+1}</td><td class="td-dim">${xe(it.sheet)}</td><td>${xe(ss(r[2]))}</td><td>${xe(ss(r[3]))}</td><td>${xe(ss(r[4]))}</td><td class="td-name">${xe(ss(r[5]))}</td><td class="td-r td-m">${sf(r[9])!=null?'¥'+fm(sf(r[9])):'-'}</td><td class="td-dim">${xe(ss(r[10]))}</td><td class="td-dim">${xe(ss(r[11]))}</td><td class="td-dim">${xe(ss(r[12]))}</td><td class="td-dim">${xe(ss(r[13]))}</td><td class="td-r td-m">${sf(r[14])!=null?'¥'+fm(sf(r[14])):'-'}</td><td class="td-dim">${xe(ss(r[15]))}</td><td class="td-dim">${xe(ss(r[16]))}</td><td style="max-width:140px;font-size:11px;color:var(--g500)">${xe(ss(r[8]))}</td><td><span class="rt ${cls}">${xe(it.reason)}</span></td></tr>`;}).join('');
+  const tb=document.getElementById('tbody-man');
+  const sheetTabsEl=document.getElementById('man-sheet-tabs');
+
+  const sheetEntries=[];
+  const sheetGroups={};
+  items.forEach(it=>{
+    const sn=(it.sheet||it.item&&it.item.sheetName||'未知').trim()||'未知';
+    if(!sheetGroups[sn]){
+      sheetGroups[sn]=[];
+      sheetEntries.push([sn,sheetGroups[sn]]);
+    }
+    sheetGroups[sn].push(it);
+  });
+
+  G._manGroups={all:items};
+  sheetEntries.forEach(([sn,arr],idx)=>{ G._manGroups[`sheet_${idx}`]=arr; });
+  G._manSheetMeta=sheetEntries.map(([sn,arr],idx)=>({key:`sheet_${idx}`,label:sn,cnt:arr.length}));
+
+  const defaultKey = G._manSheetMeta.length ? G._manSheetMeta[0].key : 'all';
+  G._activeManSheetKey = (G._activeManSheetKey && G._manGroups[G._activeManSheetKey]) ? G._activeManSheetKey : defaultKey;
+
+  if(sheetTabsEl){
+    const tabs=[{key:'all',label:'全部',cnt:items.length}, ...G._manSheetMeta];
+    sheetTabsEl.innerHTML=tabs.map(t=>
+      `<div class="sheet-tab${t.key===G._activeManSheetKey?' active':''}" onclick="manSheetSwitch('${t.key}')" data-sheetkey="${t.key}">${t.label}${t.cnt>0?` <span class="sheet-tab-cnt">${t.cnt}</span>`:''}</div>`
+    ).join('');
+  }
+
+  if(!items.length){
+    document.getElementById('cnt-man').textContent='';
+    _buildManualReasonTags([]);
+    tb.innerHTML=`<tr><td colspan="17"><div class="empty"><div class="ei">✅</div><div class="et">无需人工审核的项目</div></div></td></tr>`;
+    return;
+  }
+
+  manSheetSwitch(G._activeManSheetKey);
+}
+
+// Sheet Tab切换（真正按sheet分组视图切换，而非简单筛选）
+function manSheetSwitch(key){
+  G._activeManSheetKey=key;
+  document.querySelectorAll('.sheet-tab').forEach(el=>el.classList.toggle('active',el.dataset.sheetkey===key));
+  const items=_manualViewItems();
+  const meta=(G._manSheetMeta||[]).find(x=>x.key===key);
+  document.getElementById('cnt-man').textContent=`共 ${items.length} 条${key!=='all'&&meta?`（${meta.label} Sheet）`:''}`;
+  _buildManualReasonTags(items);
+  _renderManTable(items);
+}
+
+// 渲染人工审核表格（内部函数）
+function _renderManTable(items){
+  const tb=document.getElementById('tbody-man');
+  if(!items.length){tb.innerHTML=`<tr><td colspan="17"><div class="empty"><div class="ei">📋</div><div class="et">此分类暂无数据</div></div></td></tr>`;return;}
+  const catMap={unit:'rtag-unit',price:'rtag-price',rule:'rtag-rule',nf:'rtag-nf',zero:'rtag-zero'};
+  const catLabel={unit:'单位问题',price:'价格问题',rule:'规则违规',nf:'年框缺项',zero:'年框零价'};
+  tb.innerHTML=items.map((it,i)=>{
+    const r=it.rd||[];
+    const cat=it.reasonCat||'nf';
+    const isRuleHit=cat==='rule'||cat==='price';
+    const rowCls=isRuleHit?' class="rule-hit-row"':'';
+    const catTag=`<span class="rtag ${catMap[cat]||'rtag-nf'}">${catLabel[cat]||cat}</span>`;
+    const ruleLabel=it.ruleHit?`<span class="rule-badge" style="margin-left:4px" title="命中规则">⚡ ${xe(it.ruleHit)}</span>`:'';
+    return `<tr${rowCls}><td class="td-dim">${i+1}</td><td class="td-dim">${xe(it.sheet)}</td><td>${xe(ss(r[2]))}</td><td>${xe(ss(r[3]))}</td><td>${xe(ss(r[4]))}</td><td class="td-name">${xe(ss(r[5]))}</td><td class="td-r td-m">${sf(r[9])!=null?'¥'+fm(sf(r[9])):'-'}</td><td class="td-dim">${xe(ss(r[10]))}</td><td class="td-dim">${xe(ss(r[11]))}</td><td class="td-dim">${xe(ss(r[12]))}</td><td class="td-dim">${xe(ss(r[13]))}</td><td class="td-r td-m">${sf(r[14])!=null?'¥'+fm(sf(r[14])):'-'}</td><td class="td-dim">${xe(ss(r[15]))}</td><td class="td-dim">${xe(ss(r[16]))}</td><td style="max-width:140px;font-size:11px;color:var(--g500)">${xe(ss(r[8]))}</td><td>${catTag}${ruleLabel}</td><td style="max-width:200px;font-size:11px;color:var(--g600);line-height:1.4">${xe(it.reason)}</td></tr>`;
+  }).join('');
 }
 function rtab(t){
   document.querySelectorAll('[data-rt]').forEach(x=>x.classList.toggle('active',x.dataset.rt===t));
@@ -783,7 +1140,12 @@ function rtab(t){
 function filt(type,kw){
   const q=kw.trim().toLowerCase();
   if(type==='exc') rExc(q?G.exc.filter(i=>(i.l4||i.l3||i.l2||i.l1).toLowerCase().includes(q)):G.exc);
-  else if(type==='man') rMan(q?G.man.filter(i=>[i.rd[2],i.rd[3],i.rd[4],i.rd[5]].some(v=>ss(v).toLowerCase().includes(q))):G.man);
+  else if(type==='man'){
+    const src=_manualViewItems();
+    const filtered=q?src.filter(i=>[i.rd&&i.rd[2],i.rd&&i.rd[3],i.rd&&i.rd[4],i.rd&&i.rd[5],i.sheet].some(v=>ss(v).toLowerCase().includes(q))):src;
+    _buildManualReasonTags(filtered);
+    _renderManTable(filtered);
+  }
   else if(type==='ok') rOk(q?G.ok.filter(i=>(i.l4||i.l3||i.l2||i.l1).toLowerCase().includes(q)):G.ok);
   else if(type==='unit') rUnit(q?G.unitItems.filter(i=>[i.rd[2],i.rd[3],i.rd[4],i.rd[5]].some(v=>ss(v).toLowerCase().includes(q))):G.unitItems);
 }
@@ -826,11 +1188,14 @@ function rOvHL(){
 }
 // ══ reset ══
 function resetAudit(){
-  G.projWb=null;G.annWb=null;G.pf='';G.af='';G.mis=[];G.dec={};G.exc=[];G.man=[];G.ok=[];G.unitItems=[];G.ai=null;
+  G.projWb=null;G.annWb=null;G.pf='';G.af='';G.mis=[];G.dec={};G.exc=[];G.man=[];G.ok=[];G.unitItems=[];G.ai=null;G._manGroups=null;G._manSheetMeta=[];G._activeManSheetKey='all';
   ['proj','ann'].forEach(t=>{document.getElementById('dz-'+t).classList.remove('done','over');document.getElementById('fn-'+t).textContent='';document.querySelector('#dz-'+t+' input').value='';});
   document.getElementById('alog').innerHTML='';document.getElementById('alog').classList.remove('show');
   document.getElementById('scan-pw').classList.remove('show');setw('scan-pf',0);setw('run-pf',0);
   document.getElementById('rlog').innerHTML='';
+  // 清空规则引擎相关UI
+  const stEl=document.getElementById('man-sheet-tabs');if(stEl)stEl.innerHTML='';
+  const rtEl=document.getElementById('man-reason-tags');if(rtEl)rtEl.innerHTML='';
   goPhase('upload');
 }
 // ══ KPI卡片点击跳转 ══
@@ -921,10 +1286,19 @@ function clearKpiFilter(){
 // ══ export ══
 function exportExcel(){
   const wb=XLSX.utils.book_new();const now=new Date().toLocaleString('zh-CN');const et=G.exc.reduce((a,i)=>a+i.diff,0);
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['报价审核结果'],[''],['检查时间',now],['项目文件',G.pf],['年框文件',G.af],[''],['超标项数',G.exc.length],['超标总额',et],['待人工审核',G.man.length]]),'审核汇总');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['报价审核结果（规则引擎 v3）'],[''],['检查时间',now],['项目文件',G.pf],['年框文件',G.af],[''],['超标项数',G.exc.length],['超标总额',et],['待人工审核',G.man.length]]),'审核汇总');
   if(G.exc.length){const rows=[['序号','Sheet','一级','二级','三级','四级','项目单价','年框单价','超标金额','超标比例','匹配单位','位置']];G.exc.forEach((it,i)=>rows.push([i+1,it.sheet,it.l1,it.l2,it.l3,it.l4,it.price,it.ap,it.diff,((it.diff/it.ap)*100).toFixed(1)+'%',it.mu,`第${it.row}行`]));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'超标项');}
-  if(G.man.length){const grp={};G.man.forEach(it=>{const l1=ss(it.rd[2])||'未分类';(grp[l1]||(grp[l1]=[])).push(it);});const H=['序号','Sheet','一级','二级','三级','四级','供应商描述','单价','数量1','单位1','数量2','单位2','总价','垫付费','服务费','备注','原因'];Object.entries(grp).forEach(([l1,items])=>{const rows=[H];items.forEach((it,i)=>{const r=it.rd;rows.push([i+1,it.sheet,ss(r[2]),ss(r[3]),ss(r[4]),ss(r[5]),ss(r[8]),sf(r[9]),r[10],ss(r[11]),r[12],ss(r[13]),sf(r[14]),ss(r[15]),ss(r[16]),ss(r[17]),it.reason]);});XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),`人工-${l1}`.slice(0,31));});}
-  const ts=new Date().toISOString().slice(0,16).replace(/[-T:]/g,'').replace(/(\d{8})(\d{4})/,'$1_$2');XLSX.writeFile(wb,`审核结果_${ts}.xlsx`);
+  if(G.man.length){
+    const catLabel={unit:'单位问题',price:'价格问题',rule:'规则违规',nf:'年框缺项',zero:'年框零价'};
+    const grp={};G.man.forEach(it=>{const l1=ss(it.rd[2])||'未分类';(grp[l1]||(grp[l1]=[])).push(it);});
+    const H=['序号','Sheet','一级','二级','三级','四级','供应商描述','单价','数量1','单位1','数量2','单位2','总价','垫付费','服务费','备注','原因分类','命中规则','原因详情'];
+    Object.entries(grp).forEach(([l1,items])=>{
+      const rows=[H];
+      items.forEach((it,i)=>{const r=it.rd;rows.push([i+1,it.sheet,ss(r[2]),ss(r[3]),ss(r[4]),ss(r[5]),ss(r[8]),sf(r[9]),r[10],ss(r[11]),r[12],ss(r[13]),sf(r[14]),ss(r[15]),ss(r[16]),ss(r[17]),catLabel[it.reasonCat]||it.reasonCat||'',it.ruleHit||'',it.reason]);});
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),`人工-${l1}`.slice(0,31));
+    });
+  }
+  const ts=new Date().toISOString().slice(0,16).replace(/[-T:]/g,'').replace(/(\d{8})(\d{4})/,'$1_$2');XLSX.writeFile(wb,`审核结果_v3_${ts}.xlsx`);
 }
 // ══ charts ══
 
